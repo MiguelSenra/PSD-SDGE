@@ -1,8 +1,8 @@
 -module(client).
--export([start/2]).
+-export([start/1]).
 
-start(Host, Port) ->
-    {ok, Socket} = gen_tcp:connect(Host, Port, []),
+start(Port) ->
+    {ok, Socket} = gen_tcp:connect("0.0.0.0", Port, []),
     loop(Socket).
 
 loop(Socket) ->
@@ -10,16 +10,16 @@ loop(Socket) ->
     Command = read_line(),
     %io:format(Command),
     case Command of
-        {ok,["register"]} ->
+        "register" ->
             Username = read_line("Enter username: "),
             Password = read_line("Enter password: "),
             gen_tcp:send(Socket, term_to_binary({register, {Username, Password}})),
             loop(Socket);
-        {ok,["login"]} ->
-            %{ok,Username} = read_line("Enter username: "),
-            %{ok,Password} = read_line("Enter password: "),
+        "login" ->
+            Username = read_line("Enter username: "),
+            Password = read_line("Enter password: "),
             
-            gen_tcp:send(Socket, term_to_binary({login,{"EU","TU"}})),
+            gen_tcp:send(Socket, term_to_binary({login,{Username,Password}})),
             loop(Socket);
         _ ->
             io:format("Invalid command. Try again.~n"),
@@ -28,7 +28,8 @@ loop(Socket) ->
 
 read_line(Prompt) ->
     io:format(Prompt),
-    io:fread("","~s").
+    {ok,[Value]}=io:fread("","~s"),
+    Value.
 
 read_line() ->
     read_line("").

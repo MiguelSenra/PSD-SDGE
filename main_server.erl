@@ -1,44 +1,53 @@
 -module(main_server).
 -export([start/1, stop/1]).
--import(login_manager, [start/0,create_account/2,close_account/2,login/2,logout/1,online/0]).
+-import(login_manager, [start/0,create_account/1,close_account/1,login/1,logout/1,online/0,stop/0]).
 
 start(Port) -> spawn(fun() -> server(Port) end).
 stop(Server) -> Server ! stop.
 
+%{active,once } é para limitar os sockets a uma mensagem. Para gerir ataques DDoS por exemplo
 server(Port) ->
-  {ok, LSock} = gen_tcp:listen(Port, [binary, {active, once}, {packet, 0},
+    {ok, LSock} = gen_tcp:listen(Port, [binary, {active, true}, {packet, 0},
                                       {reuseaddr, true}]),
-  Login_Manager = spawn(fun()-> login_manager:start() end),
-  spawn(fun() -> acceptor(LSock,Login_Manager) end),
-  receive stop -> ok end.
+    spawn(fun()-> login_manager:start() end),
+    spawn(fun() -> acceptor(LSock) end),
+    receive stop -> 
+        login_manager:stop(),
+        ok 
+    end.
 
-acceptor(LSock,Login_Manager) ->
-  {ok, Sock} = gen_tcp:accept(LSock),
-  spawn(fun() -> acceptor(LSock,Login_Manager) end),
-  %Users ! {enter, self()},
-  process_tcp_messages(Sock,Login_Manager).
+acceptor(LSock) ->
+    {ok, Sock} = gen_tcp:accept(LSock),
+    spawn(fun() -> acceptor(LSock) end),
+    %Users ! {enter, self()},
+    process_tcp_messages(Sock).
 
-process_tcp_messages(Sock,Login_Manager) ->
+process_tcp_messages(Sock) ->
+    io:format("a processar~n", []),
     receive
         {tcp, _, Data} ->
             Data1 = binary_to_term(Data),
             case Data1 of 
                 {register, Credentials} ->
-                    io:format("user register~n", []),
-                     Login_Manager:create_account(Credentials),
-                    process_tcp_messages(Sock,Login_Manager);
-                {login, _} ->
+                    io:format("user register~n~p", [Credentials]),
+                    Res=login_manager:create_account([Credentials]),
+                    io:format("Estado do registo:~n~p", [Res]),
+                    %io:format("resposta~n~p", [Res]),
+                    process_tcp_messages(Sock);
+                {login, Credentials} ->
                     io:format("user login~n", []),
-                     Login_Manager:login(Data),
-                    process_tcp_messages(Sock,Login_Manager);
+                    Res=login_manager:login(Credentials),
+                    io:format("Estado do login:~n~p", [Res]),
+                    process_tcp_messages(Sock);
                 Dados ->
                     io:format("nada ~n~p", [Dados]),
-                    process_tcp_messages(Sock,Login_Manager)
-            end
+                    process_tcp_messages(Sock)
+            end;
             
-        %{tcp_closed, _} ->
+        {tcp_closed, _} -> ok;
         %  Login_Manager ! {leave, self()};
-        %{tcp_error, _, _} ->
+        {tcp_error, _, _} -> ok;
         %  Login_Manager ! {leave, self()}
+        Outro->  io:format("outros dados~n~p", [Outro])
     end.
 
