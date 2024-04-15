@@ -6,7 +6,7 @@ start(Port) ->
     loop(Socket).
 
 loop(Socket) ->
-    io:format("Enter command (register, login): "),
+    io:format("Enter command (register, login,create_album): "),
     Command = read_line(),
     %io:format(Command),
     case Command of
@@ -20,6 +20,13 @@ loop(Socket) ->
             Password = read_line("Enter password: "),
             
             gen_tcp:send(Socket, term_to_binary({login,{Username,Password}})),
+            loop(Socket);
+        
+        "create_album" ->
+            Username = read_line("Enter Nome: "),
+            Password = read_line("Enter User: "),
+            
+            gen_tcp:send(Socket, term_to_binary({create_Album,{Username,Password}})),
             loop(Socket);
         _ ->
             io:format("Invalid command. Try again.~n"),

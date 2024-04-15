@@ -11,7 +11,7 @@ rpc(Request) ->
     end.
 
 
-create_account([{Username,Passwd}]) ->
+create_account({Username,Passwd}) ->
     rpc({create_account,Username,Passwd}).
 
 
