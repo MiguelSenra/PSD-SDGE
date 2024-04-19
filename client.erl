@@ -26,7 +26,7 @@ loop(Socket) ->
             Username = read_line("Enter Nome: "),
             Password = read_line("Enter User: "),
             
-            gen_tcp:send(Socket, term_to_binary({create_Album,{Username,Password}})),
+            gen_tcp:send(Socket,{create_Album,{Username,Password}}),
             loop(Socket);
         _ ->
             io:format("Invalid command. Try again.~n"),
