@@ -1,5 +1,5 @@
 -module(albuns).
--export([start_server_albuns/0,create_Album/1,stop_server_albuns/0]).
+-export([start_server_albuns/0,create_Album/1,stop_server_albuns/0,list_Album/1]).
 -record(album, {users = [], content = #{}}).
 %-record(file, {hash, pontuation = #{}}).
 
@@ -9,6 +9,10 @@ start_server_albuns() ->
 
 create_Album({Name,User}) ->
     rpc({create_album,Name,User}).
+
+list_Album({User})->
+    rpc({list_album,User}).
+
 
 %update_Album(Album) ->
     %update_Album(Album).
@@ -36,6 +40,12 @@ handle({create_album, Name, User}, {Albuns, User_index}) ->
                     New_User_index=maps:put(User, [Name], User_index),
                     {album_created,{New_Albuns,New_User_index}}
             end
+    end;
+
+handle({list_album,User}, {Albuns, User_index}) ->
+    case maps:find(User, User_index) of
+        {ok, Value} -> {Value, {Albuns, User_index}};
+        error -> []
     end.
 
 loop({Albuns,User_index}) -> 
@@ -44,7 +54,7 @@ loop({Albuns,User_index}) ->
         {Request,From} ->
             {Msg,NextState} = handle(Request,{Albuns,User_index}),
             %io:format("tenho resposta ~n", []), 
-            From ! {Msg,?MODULE},
+            From ! {{Msg},?MODULE},
             %io:format("enviei ~n", []), 
             loop(NextState)
     end. 

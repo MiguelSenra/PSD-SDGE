@@ -3,10 +3,7 @@ package org.example;
 import java.util.Scanner;
 
 public class Main {
-    private static Scanner is = new Scanner(System.in);//Para Números
     private static Scanner scanner = new Scanner(System.in);//Para strings
-    private static final double imposto=0.23;
-    private static final double valorbase=0.149;
 
     public static void main(String[] args) {
 
@@ -14,7 +11,9 @@ public class Main {
 
         Menu menuInicial = new Menu(new String[]{
                 "Registar",
-                "Autenticar"
+                "Autenticar",
+                "Listar Albuns",
+                "Criar Album"
 
         });
         /*
@@ -180,35 +179,57 @@ public class Main {
         //menuInicial.setPreCondition(6, controller::Precondition6);
         //menuInicial.setPreCondition(11, controller::Precondition4);
 
+        //Fazer o registo
         menuInicial.setHandler(1, () -> {
-            try {
                 System.out.println("Nome de Utilizador:");
                 String nome = scanner.nextLine();
-                System.out.println("Password");
+                System.out.println("Password:");
                 String password = scanner.nextLine();
-                //controller.InsereFornecedor(nome,valorbase, imposto, multiplicador);
-                //System.out.println(sistema.toString());
-            } catch (NumberFormatException e) {
-                System.out.println("O último dado introduzido não está na forma correta. Não foi possível registar o utilizador!");
-            } //catch (FornecedorComNomeJaExistenteException e) {
-            //System.out.println(e.getMessage() + " Não foi possível adicionar a Empresa!");
-            // }
+                controller.registar(nome,password);
         });
 
+        //Autenticar
         menuInicial.setHandler(2, () -> {
-            /*
+            System.out.println("Nome de Utilizador:");
+            String nome = scanner.nextLine();
+            System.out.println("Password:");
+            String password = scanner.nextLine();
+            controller.autenticar(nome,password);
+        });
+        menuInicial.setHandler(3, () -> {
+            controller.listaAlbuns();
+        });
+
+        menuInicial.setHandler(4, () -> {
+            System.out.println("Nome do Album:");
+            String nome = scanner.nextLine();
+            controller.criaAlbum(nome);
+        });
+
+        menuInicial.setPreCondition(1, () -> !controller.Precondition1());
+        menuInicial.setPreCondition(2, () -> !controller.Precondition1());
+        menuInicial.setPreCondition(3, controller::Precondition1);
+        menuInicial.setPreCondition(4, controller::Precondition1);
+
+
+
+
+
+        /*
+        menuInicial.setHandler(2, () -> {
+
             NewMenu menuAddDivisoes = new NewMenu(new String[]{
                     "Adicionar uma nova divisão"
             });
-            */
-            System.out.println("Nome de Utilizador:");
-            String nome = scanner.nextLine();
-            System.out.println("Password");
-            String password = scanner.nextLine();
-            controller.registar(nome,password);
 
-            //controller.InsereCasa(nome, nif, nomeEmpresa);
-            /*
+        System.out.println("Nome de Utilizador:");
+        String nome = scanner.nextLine();
+        System.out.println("Password");
+        String password = scanner.nextLine();
+        controller.autenticar(nome,password);
+
+        //controller.InsereCasa(nome, nif, nomeEmpresa);
+
             try {
                 menuAddDivisoes.setHandler(1, () -> {
                     try {
@@ -224,8 +245,9 @@ public class Main {
             } catch (NumberFormatException e) {
                 System.out.println("Formato do NIF errado! Não foi possível adicionar a Casa Inteligente!");
             }
-        */
-        });
+
+    });
+         */
 
         menuInicial.run();
     }

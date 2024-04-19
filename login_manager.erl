@@ -74,7 +74,7 @@ loop(Map) ->
         {Request,From} ->
             {Msg,NextState} = handle(Request,Map),
             io:format("tenho resposta ~n", []), 
-            From ! {Msg,login_manager1},
+            From ! {{Msg},login_manager1},
             io:format("enviei ~n", []), 
             loop(NextState) 
     end . 
