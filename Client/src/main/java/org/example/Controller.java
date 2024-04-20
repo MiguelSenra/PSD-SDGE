@@ -5,7 +5,7 @@ public class Controller {
     private Sistema sistema;
 
     public Controller() {
-        this.sistema = new Sistema(12345);
+        this.sistema = new Sistema(12346);
     }
 
     public boolean Precondition1() {
@@ -26,4 +26,10 @@ public class Controller {
     public void criaAlbum(String nome) {
         this.sistema.criaAlbum(nome);
     }
+
+    public void getAlbum(String nome) {
+        this.sistema.getAlbum(nome);
+    }
+
+
 }

@@ -20,10 +20,12 @@ server(Port) ->
     end.
 
 acceptor(LSock) ->
-    {ok, Sock} = gen_tcp:accept(LSock),
-    spawn(fun() -> acceptor(LSock) end),
-    %Users ! {enter, self()},
-    process_tcp_messages(Sock).
+    case gen_tcp:accept(LSock) of 
+        {ok, Sock} -> 
+            spawn(fun() -> acceptor(LSock) end),
+            process_tcp_messages(Sock);
+        {error,closed} -> ok
+    end.
 
 process_tcp_messages(Sock) ->
     io:format("a processar~n", []),
@@ -51,6 +53,12 @@ process_tcp_messages(Sock) ->
                     process_tcp_messages(Sock);
                 {list_Album,Values} ->
                     Res=albuns:list_Album(Values),
+                    io:format("Estado do album:~n~p", [Res]),
+                    gen_tcp:send(Sock, term_to_binary(Res)),
+                    process_tcp_messages(Sock);
+                {get_Album,Values} ->
+                    io:format("get do album:~n", []),
+                    Res=albuns:get_Album(Values),
                     io:format("Estado do album:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
                     process_tcp_messages(Sock);

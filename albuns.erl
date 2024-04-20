@@ -1,5 +1,5 @@
 -module(albuns).
--export([start_server_albuns/0,create_Album/1,stop_server_albuns/0,list_Album/1]).
+-export([start_server_albuns/0,create_Album/1,stop_server_albuns/0,list_Album/1,get_Album/1]).
 -record(album, {users = [], content = #{}}).
 %-record(file, {hash, pontuation = #{}}).
 
@@ -12,6 +12,9 @@ create_Album({Name,User}) ->
 
 list_Album({User})->
     rpc({list_album,User}).
+
+get_Album({Nome,User})->
+    rpc({get_album,Nome,User}).
 
 
 %update_Album(Album) ->
@@ -45,7 +48,21 @@ handle({create_album, Name, User}, {Albuns, User_index}) ->
 handle({list_album,User}, {Albuns, User_index}) ->
     case maps:find(User, User_index) of
         {ok, Value} -> {Value, {Albuns, User_index}};
-        error -> []
+        error -> {[],{Albuns, User_index}}
+    end;
+
+handle({get_album, Name, User}, {Albuns, User_index}) ->
+    %Res_error= "Não possui autorização para acessar o album!",
+    Res_error= no_autorization,
+    case maps:find(User, User_index) of
+        {ok, Value} -> case lists:member(Name, Value) of 
+            true -> case maps:find(Name, Albuns) of
+                    {ok, Album} -> {Album,{Albuns, User_index}};
+                    error -> {no_exists,{Albuns, User_index}}              
+                end;
+            false -> {Res_error,{Albuns, User_index}}
+        end;
+        error ->  {Res_error,{Albuns, User_index}}
     end.
 
 loop({Albuns,User_index}) -> 

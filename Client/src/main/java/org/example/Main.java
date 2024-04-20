@@ -13,7 +13,9 @@ public class Main {
                 "Registar",
                 "Autenticar",
                 "Listar Albuns",
-                "Criar Album"
+                "Criar Album",
+                "Obter replica"
+
 
         });
         /*
@@ -206,10 +208,18 @@ public class Main {
             controller.criaAlbum(nome);
         });
 
+        menuInicial.setHandler(5, () -> {
+            System.out.println("Nome do Album:");
+            String nome = scanner.nextLine();
+            controller.getAlbum(nome);
+        });
+
         menuInicial.setPreCondition(1, () -> !controller.Precondition1());
         menuInicial.setPreCondition(2, () -> !controller.Precondition1());
         menuInicial.setPreCondition(3, controller::Precondition1);
         menuInicial.setPreCondition(4, controller::Precondition1);
+        menuInicial.setPreCondition(5, controller::Precondition1);
+
 
 
 

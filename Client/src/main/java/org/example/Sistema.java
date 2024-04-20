@@ -5,8 +5,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 import com.ericsson.otp.erlang.*;
 
@@ -58,7 +57,7 @@ public class Sistema {
                     return  ((OtpErlangAtom) firstField).atomValue();
                 }
             }
-            throw new Exception("Não foi possível obter uma reposta");
+            throw new Exception("Não foi possível obter uma resposta");
 
         }catch(Exception e){
             System.out.println("Não consegui escrever no socket" + e.toString());
@@ -92,11 +91,84 @@ public class Sistema {
     public void criaAlbum(String nome) {
         String response=this.autentication_handler("create_Album",nome,this.username);
         if (response.equals("album_created")) {
+            System.out.println("Album criado com sucesso!");
+        }
+        else if (response.equals("album_exists")){
+            System.out.println("O album já existe!");
+        }
+    }
+
+    public void getAlbum(String nome) {
+        String response=this.get_album_handler("get_Album",nome);
+        if (response.equals("album_created")) {
             System.out.println("A criado com sucesso!");
         }
         else if (response.equals("album_exists")){
             System.out.println("O album já existe!");
         }
+    }
+
+    private String  get_album_handler(String atom,String nome) {
+        try {
+            OtpErlangObject[] tuple = new OtpErlangObject[]{
+                    new OtpErlangAtom(atom),
+                    new OtpErlangTuple(new OtpErlangObject[]{
+                            new OtpErlangString(nome),
+                            new OtpErlangString(this.username)
+                    })
+            };
+
+            OtpErlangTuple message = new OtpErlangTuple(tuple);
+            ByteBuffer bb = ByteBuffer.wrap(tupleToBytes(message));
+            ss.write(bb);
+
+            bb.clear();
+            while (ss.read(bb) > 0) {
+                bb.flip();
+                byte[] receivedBytes = new byte[bb.remaining()];
+                bb.get(receivedBytes);
+                OtpErlangTuple response = bytesToTuple(receivedBytes);
+                System.out.println(response);
+                OtpErlangObject[] fields = response.elements();
+
+                OtpErlangObject firstField = fields[0];
+                if (firstField instanceof OtpErlangAtom) {
+                    String error=((OtpErlangAtom) firstField).atomValue();
+                    if (error.equals("no_autorization"))
+                        System.out.println("Você não é membro desse álbum!");
+                    else if (error.equals("no_exists"))
+                        System.out.println("O álbum indicado não existe!");
+                }
+                else {
+                    Map<String, Object> albumData = new HashMap<>();
+                    // Supondo que o segundo campo é a lista de músicas
+                    OtpErlangTuple album = (OtpErlangTuple) firstField;
+                    OtpErlangList membersList = (OtpErlangList) album.elementAt(1); // Utilize o método elementAt para acessar o elemento da tupla
+                    List<String> membros = new ArrayList<>();
+                    for (OtpErlangObject song : membersList.elements()) {
+                        membros.add(((OtpErlangString) song).stringValue());
+                    }
+                    albumData.put("membros", membros);
+                    OtpErlangObject thirdField = album.elementAt(2);
+                    Map<String, Object> ficheiros = new HashMap<>();
+                    OtpErlangMap erlangMap = (OtpErlangMap) thirdField;
+                    for (OtpErlangObject key : erlangMap.keys()) {
+                        OtpErlangObject value = erlangMap.get(key);
+                        ficheiros.put(key.toString(), value);
+                    }
+                    albumData.put("ficheiros", ficheiros);
+
+                    // Mostrar os dados do álbum
+                    System.out.println("Dados do álbum: " + albumData);
+                }
+                //return albumData;
+            }
+            throw new Exception("Não foi possível obter uma reposta");
+
+        }catch(Exception e){
+            System.out.println("Não consegui escrever no socket" + e.toString());
+        }
+        return "ola";
     }
 
     private ArrayList<String> list_handler(String atom) {
@@ -134,7 +206,7 @@ public class Sistema {
                     return arrayList;
                 }
             }
-            throw new Exception("Não foi possível obter uma reposta");
+            //throw new Exception("Não foi possível obter uma reposta");
 
         }catch(Exception e){
             System.out.println("Não consegui escrever no socket" + e.toString());
