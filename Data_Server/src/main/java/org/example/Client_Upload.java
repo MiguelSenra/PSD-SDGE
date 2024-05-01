@@ -1,5 +1,6 @@
 package org.example;
 
+import com.ericsson.otp.erlang.*;
 import com.google.protobuf.ByteString;
 import inc.FileUploadRequest;
 import inc.Rx3FileServiceGrpc;
@@ -19,7 +20,7 @@ public class Client_Upload {
         var stub = Rx3FileServiceGrpc.newRxStub(channel);
 
 
-        try (FileInputStream fileInputStream = new FileInputStream("currículo.pdf")) {
+        try (FileInputStream fileInputStream = new FileInputStream("senra_2.jpg")) {
             stub.upload(Flowable.generate(emitter -> {
                         int numBytesRead = fileInputStream.read(buffer);
                         if (numBytesRead == -1) {
@@ -38,4 +39,24 @@ public class Client_Upload {
         }
 
     }
+    public static byte[] tupleToBytes(OtpErlangTuple tuple) {
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        OtpOutputStream otpOutputStream = new OtpOutputStream(outputStream.size());
+        // Adicionar a tag 131 manualmente
+        otpOutputStream.write1(OtpExternal.versionTag);
+        tuple.encode(otpOutputStream);
+        return otpOutputStream.toByteArray();
+    }
+
+    public static OtpErlangTuple bytesToTuple(byte[] bytes) throws IOException, OtpErlangDecodeException {
+        // Descodificar os bytes em um objeto OtpErlangTuple
+        OtpErlangObject object = new OtpInputStream(bytes).read_any();
+        if (!(object instanceof OtpErlangTuple)) {
+            throw new IllegalArgumentException("Objeto não é um OtpErlangTuple: " + object);
+        }
+
+        return (OtpErlangTuple) object;
+    }
+
 }

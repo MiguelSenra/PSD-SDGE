@@ -75,3 +75,5 @@ loop({Albuns,User_index}) ->
             %io:format("enviei ~n", []), 
             loop(NextState)
     end. 
+
+

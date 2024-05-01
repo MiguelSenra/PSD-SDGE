@@ -63,6 +63,7 @@ process_tcp_messages(Sock) ->
                     gen_tcp:send(Sock, term_to_binary(Res)),
                     process_tcp_messages(Sock);
 
+
                 Dados ->
                     io:format("nada ~n~p", [Dados]),
                     process_tcp_messages(Sock)
