@@ -19,22 +19,90 @@ import static java.lang.System.out;
 
 public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
 
-    private Map<String, Integer> files = new HashMap<>();
+    private Map<ZoneLimits, Map<String, String>> filesByLimits;
+
+    public Service(ArrayList<ZoneLimits> limits) {
+        super();
+        this.filesByLimits = new HashMap<>();
+        for (ZoneLimits limit : limits) {
+            filesByLimits.put(limit, new HashMap<>());
+        }
+    }
+
+    private ZoneLimits keyInDomain(String key) {
+        for (ZoneLimits z : filesByLimits.keySet()) {
+            if (z.keyInInterval(key))
+                return z;
+        }
+        return null;
+    }
+
+    private ZoneLimits newLimits(String key) {
+        for (ZoneLimits z : filesByLimits.keySet()) {
+            if (z.keyInInterval(key)) {
+                ZoneLimits res = new ZoneLimits(z.getStartHash(), key);
+                z.setStartHash(key);
+                return res;
+            }
+        }
+        return null;
+    }
+
+    private ArrayList<String> ListFilesToTransferNewServer(String hash) {
+        ArrayList<String> filesToTransfer = new ArrayList<>();
+        // Procura pelos limites que contêm o hash fornecido
+        //out.println();
+        ZoneLimits zoneLimits = keyInDomain(hash);
+
+        // Se encontrou os limites correspondentes
+        if (zoneLimits != null) {
+            // Obtém o mapa de arquivos para esses limites
+            Map<String, String> filesMap = filesByLimits.get(zoneLimits);
+
+            // Se o mapa de arquivos não for nulo
+            if (filesMap != null) {
+                // Converte o mapa de arquivos para uma lista de FileHash
+                ArrayList<FileHash> filesInLimits = new ArrayList<>();
+                for (Map.Entry<String, String> entry : filesMap.entrySet()) {
+                    filesInLimits.add(new FileHash(entry.getKey(), entry.getValue()));
+                }
+
+                // Ordena os arquivos com base no comprimento do nome do arquivo
+                filesInLimits.sort(Comparator.comparingInt(fh -> fh.getFileName().length()));
+
+                // Adiciona os nomes dos arquivos à lista de arquivos para transferência
+                for (FileHash fileHash : filesInLimits) {
+                    filesToTransfer.add(fileHash.getFileName());
+                }
+            }
+        }
+        System.out.println("Os ficheiros a transferir são: " + filesToTransfer.toString());
+        return filesToTransfer;
+    }
+
     public Flowable<FileUploadResponse> upload(Flowable<FileUploadRequest> request) {
         return request.map(requestMessage -> {
                     String campo1 = requestMessage.getFileName();
                     byte[] campo2 = requestMessage.getChunk().toByteArray();
+                    String ssh_key = requestMessage.getSsaKey();
+                    ZoneLimits zone= keyInDomain(ssh_key);
+                    //out.println("ola");
+                    //out.println(zone);
+                    if (!(filesByLimits.get(zone).containsKey(ssh_key))) {
+                        filesByLimits.get(zone).put(ssh_key, campo1);
+                    }
                     return guardar_file(campo1, campo2);
                 })
                 .map(n -> FileUploadResponse.newBuilder().setSize(2).build());
     }
 
     public Flowable<FileDownloadResponse> transferDataNewServer(Flowable<inc.TransferDataNewServerRequest> request) {
-        ArrayList ar= new ArrayList();
-        ar.add("senra_2.jpg");
-        ar.add("senra_3.jpg");
-        ar.add("senra_4.jpg");
-        return request.flatMap(res-> aux1(ar));
+        out.println("TransferDataNewServerRequest");
+        return request.flatMap(res-> {
+            ArrayList<String> ar= ListFilesToTransferNewServer(res.getSsaKey());
+            out.println(ar.toString());
+            return aux1(ar);
+            });
     }
 
 
@@ -70,6 +138,7 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
     public Flowable<FileDownloadResponse> aux1(List<String> filenames) {
         return Flowable.fromIterable(filenames)
                 .flatMap(filename -> {
+                    out.println(filename);
                     final int[] idx = {1};
                     try {
                         FileInputStream fis = new FileInputStream(filename);
@@ -100,16 +169,7 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
 
     public int guardar_file( String filename, byte[] data ) {
         //out.println("entrei");
-        if (!(this.files.containsKey(filename))) {
-            this.files.put(filename, 1);
-        }
         File file = new File(filename);
-        if (file.exists()) {
-            //out.println("ola");
-        }
-        else {
-            out.println("Algo de errado aconteceu!");
-        }
         try {
             // Verifica se o arquivo existe
             if (!(file.exists())) {

@@ -2,8 +2,6 @@ package org.example;
 
 import com.ericsson.otp.erlang.*;
 import com.google.common.hash.Hashing;
-import com.google.protobuf.ByteString;
-import inc.FileDownloadRequest;
 import inc.Rx3FileServiceGrpc;
 import inc.TransferDataNewServerRequest;
 import io.grpc.ManagedChannelBuilder;
@@ -16,21 +14,19 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 import static com.google.common.base.Strings.repeat;
 import static org.example.Client_Upload.bytesToTuple;
 import static org.example.Client_Upload.tupleToBytes;
 
-public class DataServer {
+public class DataServer1 {
     private SocketChannel ss;
 
     private static final String ip = "localhost";
-    private static final int portNumber = 12347;
+    private static final int portNumber = 12346;
 
     private ArrayList<ZoneLimits> limits;
 
@@ -40,7 +36,7 @@ public class DataServer {
         String input1 = "Hello, World!_a";
         String input2 = "Hello, World!_b";
         String input3 = "Hello, World!_c";
-        String input4 = "ola_a";
+        String input4 = "hello_";
         String input5 = "ola_b";
         String input6 = "ola_c";
 
@@ -70,13 +66,13 @@ public class DataServer {
         zones.add(new Zone("localhost", 12346, hashBytes1));
         zones.add(new Zone("localhost", 12346, hashBytes2));
         zones.add(new Zone("localhost", 12346, hashBytes3));
-        zones.add(new Zone("localhost", 12347, hashBytes4));
-        zones.add(new Zone("localhost", 12347, hashBytes5));
-        zones.add(new Zone("localhost", 12347, hashBytes6));
+        //zones.add(new Zone("localhost4", 12347, hashBytes4));
+        //zones.add(new Zone("localhost5", 12347, hashBytes5));
+        //zones.add(new Zone("localhost6", 12347, hashBytes6));
         Arrays.sort(zones.toArray());
         System.out.println(zones.toString());
 
-        DataServer server = new DataServer();
+        DataServer1 server = new DataServer1();
         //ArrayList<Zone> servers=server.OpenSession();
         System.out.println("aqui");
         ArrayList<Zone> vizinhos = server.getVizinhos(zones);

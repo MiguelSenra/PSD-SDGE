@@ -9,10 +9,10 @@ import io.grpc.ManagedChannelBuilder;
 import io.reactivex.rxjava3.core.Flowable;
 
 import java.io.*;
-
+/*
 public class Client_tranfer {
     private static final int BATCH_SIZE = 1024;
-    private static byte[] buffer = new byte[BATCH_SIZE];
+    //private static byte[] buffer = new byte[BATCH_SIZE];
 
     public static void main(String[] args) {
         var channel = ManagedChannelBuilder.forAddress("localhost", 12345)
@@ -21,7 +21,7 @@ public class Client_tranfer {
         var stub = Rx3FileServiceGrpc.newRxStub(channel);
 
         TransferDataNewServerRequest request = TransferDataNewServerRequest.newBuilder()
-                .setSsaKey("a")
+                .setSsaKey(
                 .build();
 
         final FileOutputStream[] fileOutputStream = {null};
@@ -42,3 +42,4 @@ public class Client_tranfer {
                     .blockingSubscribe(System.out::println);
     }
 }
+*/
