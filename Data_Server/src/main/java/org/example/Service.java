@@ -37,15 +37,12 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
         return null;
     }
 
-    private ZoneLimits newLimits(String key) {
+    private void newLimits(String key) {
         for (ZoneLimits z : filesByLimits.keySet()) {
             if (z.keyInInterval(key)) {
-                ZoneLimits res = new ZoneLimits(z.getStartHash(), key);
                 z.setStartHash(key);
-                return res;
             }
         }
-        return null;
     }
 
     private ArrayList<String> ListFilesToTransferNewServer(String hash) {
@@ -100,6 +97,7 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
         out.println("TransferDataNewServerRequest");
         return request.flatMap(res-> {
             ArrayList<String> ar= ListFilesToTransferNewServer(res.getSsaKey());
+            newLimits(res.getSsaKey());
             out.println(ar.toString());
             return aux1(ar);
             });

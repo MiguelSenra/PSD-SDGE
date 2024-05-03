@@ -2,6 +2,7 @@
 -export([start/1, stop/1]).
 -import(login_manager, [start/0,create_account/1,close_account/1,login/1,logout/1,online/0,stop/0]).
 -import (albuns, [start_server_albuns/0,create_Album/1,stop_server_albuns/0]).
+-import (server_data, [start_serverData/0,new_server/1,get_servers/0,stop_serverData/0]).
 
 start(Port) -> spawn(fun() -> server(Port) end).
 stop(Server) -> Server ! stop.
@@ -12,10 +13,12 @@ server(Port) ->
                                       {reuseaddr, true}]),
     spawn(fun()-> login_manager:start() end),
     spawn(fun()-> albuns:start_server_albuns() end),
+    spawn(fun()-> server_data:start_serverData() end),
     spawn(fun() -> acceptor(LSock) end),
     receive stop -> 
         login_manager:stop(),
         albuns:stop_server_albuns(),
+        server_data:stop_serverData(),
         ok 
     end.
 
@@ -62,8 +65,20 @@ process_tcp_messages(Sock) ->
                     io:format("Estado do album:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
                     process_tcp_messages(Sock);
-
-
+                {new_data_server,Values} ->
+                    io:format("Novo servidor de dados:~n~p", [Values]),
+                    Res=server_data:new_server(Values),
+                    io:format("Estado do album:~n~p", [Res]),
+                    gen_tcp:send(Sock, term_to_binary(Res)),
+                    gen_tcp:close(Sock),
+                    process_tcp_messages(Sock);
+                {get_servers} ->
+                    io:format("Dados servidores de dados atualizados:~n", []),
+                    Res=server_data:get_servers(),
+                    io:format("Estado do album:~n~p", [Res]),
+                    gen_tcp:send(Sock, term_to_binary(Res)),
+                    gen_tcp:close(Sock),
+                    process_tcp_messages(Sock);
                 Dados ->
                     io:format("nada ~n~p", [Dados]),
                     process_tcp_messages(Sock)
