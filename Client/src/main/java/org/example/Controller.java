@@ -43,4 +43,8 @@ public class Controller {
         this.sistema.chat();
     }
 
+    public void addUser(String nome) {
+        this.sistema.addUser(nome);
+    }
+
 }

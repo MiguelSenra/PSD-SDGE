@@ -34,6 +34,12 @@ public class Main {
             controller.addFile(nomeFicheiro, path);
         });
 
+        MenuEditing.setHandler(3,() -> {
+            System.out.println("Nome do Utilizador:");
+            String nome = scanner.nextLine();
+            controller.addUser(nome);
+        });
+
         MenuEditing.setHandler(6, () -> {
             controller.chat();
         });

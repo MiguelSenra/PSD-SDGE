@@ -152,9 +152,13 @@ public class Sistema {
                     // Supondo que o segundo campo é a lista de músicas
                     OtpErlangTuple album = (OtpErlangTuple) firstField;
                     OtpErlangList membersList = (OtpErlangList) album.elementAt(1); // Utilize o método elementAt para acessar o elemento da tupla
-                    List<String> membros = new ArrayList<>();
-                    for (OtpErlangObject song : membersList.elements()) {
-                        membros.add(((OtpErlangString) song).stringValue());
+                    Map<String,Map<String,Integer>> membros = new HashMap<>();
+                    for (OtpErlangObject file : membersList.elements()) {
+                        //membros.add(((OtpErlangString) song).stringValue());
+
+                        HashMap<String,Integer> crdt_ids = new HashMap<>();
+                        crdt_ids.put(username,0);
+                        membros.put(((OtpErlangString) file).stringValue(),crdt_ids);
                     }
                     albumData.put("membros", membros);
                     OtpErlangObject thirdField = album.elementAt(2);
@@ -166,7 +170,7 @@ public class Sistema {
                     }
                     albumData.put("ficheiros", ficheiros);
                     ArrayList<Zone> editors=BeginEdition(nome);
-                    this.editing=new Editing(this.username, 12346,editors);
+                    this.editing=new Editing(this.username, 12346,editors,albumData);
 
                     // Mostrar os dados do álbum
                     System.out.println("Dados do álbum: " + albumData);
@@ -332,5 +336,8 @@ public class Sistema {
         System.out.println("Adicionando ficheiro " + nomeFile + " no caminho " + path);
     }
 
+    public void addUser(String nome) {
+        this.editing.addUser(nome);
+    }
 
 }

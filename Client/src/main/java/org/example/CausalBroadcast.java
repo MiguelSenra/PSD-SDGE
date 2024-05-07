@@ -7,20 +7,25 @@ import java.util.Set;
 
 public class CausalBroadcast {
 
-    static Map<Integer, Integer> vv = new HashMap<>();
+    private Map<String, Integer> vv = new HashMap<>();
     //static Set<String> delivered = new HashSet<>();
-    static Set<Message> pending = new HashSet<>();
-/*
-    static void incClock() {
-        int nodeId = node_id();
-        vv.put(nodeId, vv.getOrDefault(nodeId, 0) + 1);
+    private Set<Message> pending = new HashSet<>();
+
+    private String username;
+
+    public void incClock() {
+        vv.put(username, vv.getOrDefault(username, 0) + 1);
     }
-    */
-    static boolean canDeliver(Message msg) {
-        int src = msg.getSrc();
+
+    public Map<String,Integer> getVv() {
+        return new HashMap<>(vv);
+    }
+
+    public boolean canDeliver(Message msg) {
+        String src = msg.getSrc();
         Map<Integer, Integer> vvm = msg.getBody().getVv();
         if (vv.get(src) + 1 == vvm.get(src)) {
-            for (Integer key : vv.keySet()) {
+            for (String key : vv.keySet()) {
                 if (!key.equals(src) && vvm.get(key) > vv.getOrDefault(key, 0)) {
                     return false;
                 }
@@ -31,7 +36,7 @@ public class CausalBroadcast {
         }
     }
 
-    static Message verificaMensagensAtrasadas() {
+    public Message verificaMensagensAtrasadas() {
         for (Message msg : pending) {
             if (canDeliver(msg)) {
                 pending.remove(msg);
@@ -41,8 +46,8 @@ public class CausalBroadcast {
         return null;
     }
 
-    static void deliverMessage(Message msg) {
-        int src = msg.getId();
+    public void deliverMessage(Message msg) {
+        String src = msg.getSrc();
         //delivered.add(msg.getBody().getMessage());
         vv.put(src, vv.get(src) + 1);
         Message nextMsg;
@@ -60,7 +65,7 @@ public class CausalBroadcast {
         }
     }
     */
-    static void fwdMsg(Message msg) {
+    public void fwdMsg(Message msg) {
         if (canDeliver(msg)) {
             deliverMessage(msg);
         } else {

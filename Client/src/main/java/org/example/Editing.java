@@ -12,16 +12,22 @@ public class Editing {
     //private Scanner scanner;
 
     private ArrayList<Zone> members;
+    private Map<String,Object> album;
 
-    String username;
+    AlbumCRDT albumCRDT;
+
+    private CausalBroadcast cb= new CausalBroadcast();
+     String username;
 
     ZContext context;
 
     ZMQ.Socket socket;
 
-    public Editing(String username, long portNUmber, ArrayList<Zone> members) {
+
+    public Editing(String username, long portNUmber, ArrayList<Zone> members, Map<String,Object> album) {
+            this.albumCRDT=new AlbumCRDT(album,username);
             this.context = new ZContext();
-            this.socket = context.createSocket(SocketType.DEALER);
+            this.socket = context.createSocket(SocketType.ROUTER);
             this.username=username;
 
             Thread replyThread = new Thread(() -> {
@@ -37,11 +43,13 @@ public class Editing {
                         if (req == null) {
                             continue; // No message, go back to recv
                         }
+                        Message1 deserializedMessage = SerializationUtils.deserializeObject(req);
+                        System.out.println(deserializedMessage);
                         //aqui
                         //byte[] id = socket1.recv();
                         //byte[] res = socket1.recv();
                         //System.out.println(new String(res, ZMQ.CHARSET));
-                        System.out.println("[" + new String(id, ZMQ.CHARSET) + "]: " + new String(req, ZMQ.CHARSET));
+                        //System.out.println("[" + new String(id, ZMQ.CHARSET) + "]: " + new String(req, ZMQ.CHARSET));
                         //Body body = new Body(req, ZMQ.CHARSET);
                         //Message msg = new Message(Integer(id), body);
                         //causal.fwdMsg(msg);
@@ -69,7 +77,7 @@ public class Editing {
                 String message;
                 while(scanner.hasNextLine() && !(message = scanner.nextLine()).equals("")) {// Aguarda pressionar Enter
                     //socket.sendMore("arg[]".getBytes(ZMQ.CHARSET));
-                    //socket.sendMore(this.username.getBytes(ZMQ.CHARSET));
+                    socket.sendMore(this.username.getBytes(ZMQ.CHARSET));
                     socket.send(message.getBytes(ZMQ.CHARSET), 0);
                     System.out.println("enviou");
                     //socket.sendMore("server1".getBytes(ZMQ.CHARSET));
@@ -85,5 +93,12 @@ public class Editing {
             //scanner.close();
         }
 
+    public void addUser(String nome) {
+        Message1 msg=this.albumCRDT.addUser(nome);
+        byte[] data = SerializationUtils.serializeObject(msg);
+        socket.sendMore(this.username.getBytes(ZMQ.CHARSET));
+        socket.send(data, 0);
 
+
+    }
 }

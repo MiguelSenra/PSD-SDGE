@@ -3,16 +3,20 @@ package org.example;
 import java.util.Map;
 
 public class Message {
-    private int id;
-    private int src;
+    private String src;
+    private String type;
     private Body body;
 
-    public Message(int src, Body body) {
-        this.src = src;
+    public Message(String type, Body body) {
+        this.type = type;
         this.body = body;
     }
 
-    public int getSrc() {
+    public String getType() {
+        return type;
+    }
+
+    public String getSrc() {
         return src;
     }
 
@@ -20,13 +24,6 @@ public class Message {
         return body;
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
 }
 
 class Body {
