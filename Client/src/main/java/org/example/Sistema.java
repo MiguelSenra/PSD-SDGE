@@ -10,12 +10,15 @@ import java.util.*;
 import com.ericsson.otp.erlang.*;
 
 
-
 public class Sistema {
     private SocketChannel ss;
     private String username;
 
+    private long portNumber=12345;
+
     private Boolean login=false;
+
+    private Editing editing;
 
     public Boolean isAutenticated() {
         return this.login;
@@ -98,17 +101,21 @@ public class Sistema {
         }
     }
 
-    public void getAlbum(String nome) {
+    public Boolean getAlbum(String nome) {
         String response=this.get_album_handler("get_Album",nome);
-        if (response.equals("album_created")) {
-            System.out.println("A criado com sucesso!");
+        Boolean flag=false;
+        if (response.equals("no_exists")){
+            System.out.println("O album não existe!");
+        } else if (response.equals("no_autorization")){
+            System.out.println("O utilizador não pode aceder ao album!");
         }
-        else if (response.equals("album_exists")){
-            System.out.println("O album já existe!");
+        else {
+            flag=true;
         }
+        return flag;
     }
 
-    private String  get_album_handler(String atom,String nome) {
+    private String get_album_handler(String atom,String nome) {
         try {
             OtpErlangObject[] tuple = new OtpErlangObject[]{
                     new OtpErlangAtom(atom),
@@ -127,16 +134,17 @@ public class Sistema {
                 bb.flip();
                 byte[] receivedBytes = new byte[bb.remaining()];
                 bb.get(receivedBytes);
-                OtpErlangTuple response = bytesToTuple(receivedBytes);
-                System.out.println(response);
-                OtpErlangObject[] fields = response.elements();
+                OtpErlangTuple response_sc = bytesToTuple(receivedBytes);
+                System.out.println(response_sc);
+                OtpErlangObject[] fields = response_sc.elements();
 
                 OtpErlangObject firstField = fields[0];
+                String response="ok";
                 if (firstField instanceof OtpErlangAtom) {
-                    String error=((OtpErlangAtom) firstField).atomValue();
-                    if (error.equals("no_autorization"))
+                    response=((OtpErlangAtom) firstField).atomValue();
+                    if (response.equals("no_autorization"))
                         System.out.println("Você não é membro desse álbum!");
-                    else if (error.equals("no_exists"))
+                    else if (response.equals("no_exists"))
                         System.out.println("O álbum indicado não existe!");
                 }
                 else {
@@ -157,18 +165,20 @@ public class Sistema {
                         ficheiros.put(key.toString(), value);
                     }
                     albumData.put("ficheiros", ficheiros);
+                    ArrayList<Zone> editors=BeginEdition(nome);
+                    this.editing=new Editing(this.username, 12346,editors);
 
                     // Mostrar os dados do álbum
                     System.out.println("Dados do álbum: " + albumData);
                 }
-                //return albumData;
+                return response;
             }
             throw new Exception("Não foi possível obter uma reposta");
 
         }catch(Exception e){
-            System.out.println("Não consegui escrever no socket" + e.toString());
+            System.out.println(e.getMessage());
         }
-        return "ola";
+        return "erro";
     }
 
     private ArrayList<String> list_handler(String atom) {
@@ -219,6 +229,82 @@ public class Sistema {
     }
 
 
+    public ArrayList<Zone> BeginEdition(String albumName) {
+        ArrayList<Zone> zones = new ArrayList<>();
+        try {
+            SocketChannel ss1 = SocketChannel.open(new InetSocketAddress((int) portNumber));
+            try {
+                OtpErlangObject[] tuple = new OtpErlangObject[]{
+                        new OtpErlangAtom("add_editor"),
+                        new OtpErlangTuple(new OtpErlangObject[]{
+                                new OtpErlangString(albumName),
+                                new OtpErlangString(this.username),
+                                new OtpErlangString("localhost"),
+                                new OtpErlangLong(12347)
+                        })
+                };
+                OtpErlangTuple message = new OtpErlangTuple(tuple);
+                ByteBuffer bb = ByteBuffer.wrap(tupleToBytes(message));
+                ss1.write(bb);
+
+                System.out.println("OLAAAAAAAAAAAAA");
+                bb.clear();
+                int bytesRead;
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                while ((bytesRead = ss1.read(bb)) != -1) {
+                    System.out.println("Lidos " + bytesRead + " bytes do socket.");
+                    bb.flip();
+                    byte[] receivedBytes = new byte[bb.remaining()];
+                    bb.get(receivedBytes);
+                    baos.write(receivedBytes);
+                    bb.clear();
+                }
+
+                byte[] receivedBytes = baos.toByteArray();
+
+                System.out.println("OLAAAAAAAAAAAAA" + new String(receivedBytes));
+                OtpErlangTuple response = bytesToTuple(receivedBytes);
+                System.out.println("OLAAAAAAAAAAAAA");
+                OtpErlangObject[] fields = response.elements();
+                System.out.println("OLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+                System.out.println(response);
+                OtpErlangObject firstField = fields[0];
+                if (firstField instanceof OtpErlangAtom) {
+                    // Converter o átomo em uma string
+                    String error = ((OtpErlangAtom) firstField).atomValue();
+                    if (error.equals("no_autorization")) {
+                        System.out.println("Você não é membro desse álbum!");
+                    } else if (error.equals("no_exists")) {
+                        System.out.println("O álbum indicado não existe!");
+                    }
+                    return null;
+                } else {
+                    OtpErlangList zonesList = (OtpErlangList) firstField;
+                    for (OtpErlangObject zone : zonesList.elements()) {
+                        OtpErlangTuple zoneTuple = (OtpErlangTuple) zone;
+                        String ip = ((OtpErlangString) zoneTuple.elementAt(0)).stringValue();
+                        int port = ((OtpErlangLong) zoneTuple.elementAt(1)).intValue();
+                        String hash = ((OtpErlangString) zoneTuple.elementAt(2)).stringValue();
+                        zones.add(new Zone(ip, port, hash));
+                    }
+                    return zones;
+                }
+                //throw new Exception("Não foi possível obter uma reposta");
+
+            } catch (Exception e) {
+                System.out.println("Erro" + e.getMessage());
+            }
+            return new ArrayList<>();
+        }
+        catch (IOException e) {
+            System.err.println("Erro ao conectar ao servidor: " + e.getMessage());
+        }
+        return new ArrayList<>();
+    }
+
+    public void chat(){
+        this.editing.chat();
+    }
 
     public static byte[] tupleToBytes(OtpErlangTuple tuple) {
 
@@ -232,12 +318,18 @@ public class Sistema {
 
     public static OtpErlangTuple bytesToTuple(byte[] bytes) throws IOException, OtpErlangDecodeException {
         // Descodificar os bytes em um objeto OtpErlangTuple
+        System.out.println("hey"+new String(bytes));
         OtpErlangObject object = new OtpInputStream(bytes).read_any();
+        System.out.println("ola"+object);
         if (!(object instanceof OtpErlangTuple)) {
             throw new IllegalArgumentException("Objeto não é um OtpErlangTuple: " + object);
         }
 
         return (OtpErlangTuple) object;
+    }
+
+    public void addFile(String nomeFile, String path) {
+        System.out.println("Adicionando ficheiro " + nomeFile + " no caminho " + path);
     }
 
 

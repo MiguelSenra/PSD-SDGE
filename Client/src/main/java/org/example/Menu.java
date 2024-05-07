@@ -11,7 +11,6 @@ public class Menu {
      * Functional interface para handlers.
      */
     private static Scanner is = new Scanner(System.in);
-    private static Scanner scanner = new Scanner(System.in);
 
     // Variáveis de instância
     private List<String> opcoes;            // Lista de opções

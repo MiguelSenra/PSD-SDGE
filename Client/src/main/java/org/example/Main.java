@@ -14,172 +14,30 @@ public class Main {
                 "Autenticar",
                 "Listar Albuns",
                 "Criar Album",
-                "Obter replica"
-
-
-        });
-        /*
-        NewMenu menuDevices = new NewMenu(new String[]{
-                "Inserir um SmartBulb",
-                "Inserir um SmartSpeaker",
-                "Inserir uma SmartCamera"
-        });
-         */
-        /*
-        menuDevices.setHandler(1,()-> {
-            try {
-                System.out.println("Insira o NIF do proprietário da Casa:");
-                int nif = is.nextInt();
-                System.out.println("Insira o nome da Divisão da casa a que pretende adicionar o SmartBulb:");
-                String nomeDivisao = scanner.nextLine();
-                System.out.println("Insira o nome do dispositivo");
-                String nome = scanner.nextLine();
-                System.out.println("Insira o tamanho da Lâmpada (em cm) ");
-                double height = is.nextDouble();
-                int tom = 0;
-                for (int i = 0; tom < 1 || tom > 3; i++) {
-                    if (i > 0)
-                        System.out.println("A opção escolhida não se encontra nas opções disponíveis!\n");
-                    System.out.println("Insira o tom da Lâmpada:");
-                    System.out.println("1-> Tom Frio");
-                    System.out.println("2-> Tom Médio");
-                    System.out.println("3-> Tom Quente");
-                    tom = is.nextInt();
-                }
-                SmartBulb smartbulb = new SmartBulb(nome, tom, height);
-                controller.addDevice(nif, nomeDivisao, smartbulb);
-            } catch (NumberFormatException e) {
-                System.out.println("O último dado introduzido não está na forma correta. Não foi possível adicionar o dispositivo!");
-            } catch (DispositivoExisteNaDivisaoException e) {
-                System.out.println(e.getMessage() + "Não foi possível adicionar o dispositivo!");
-            } catch (NullPointerException e) {
-                System.out.println("O proprietário do NIF não possui nenhuma casa! Não foi possível adicionar o dispositivo!");
-            }
-
-        });
-        menuDevices.setHandler(2,()-> {
-            try {
-                Scanner scanner = new Scanner(System.in);
-                System.out.println("Insira o NIF do proprietário da Casa:");
-                int nif = is.nextInt();
-                System.out.println("Insira o nome da Divisão da casa a que pretende adicionar o SmartSpeaker:");
-                String nomeDivisao = scanner.nextLine();
-                System.out.println("Insira o nome do dispositivo");
-                String nome = scanner.nextLine();
-                System.out.println("Insira a marca do dispositivo");
-                String brand = scanner.nextLine();
-                System.out.println("Insira o Canal de rádio atual do dispositivo");
-                String channel = scanner.nextLine();
-                int volume = -1;
-                for (int i = 0; volume < 0 || volume > 20; i++) {
-                    if (i > 0)
-                        System.out.println("O volume selecionado não é um volume válido!\n");
-                    System.out.println("Insira o volume do dispositivo (volume Mínimo: 0 , volume Máximo: 20)");
-                    volume = is.nextInt();
-                }
-                SmartSpeaker smartspeaker = new SmartSpeaker(nome, volume, channel, brand);
-                controller.addDevice(nif, nomeDivisao, smartspeaker);
-            } catch (NumberFormatException e) {
-                System.out.println("O último dado introduzido não está na forma correta. Não foi possível adicionar o dispositivo!");
-            } catch (DispositivoExisteNaDivisaoException e) {
-                System.out.println(e.getMessage() + "Não foi possível adicionar o dispositivo!");
-            } catch (NullPointerException e) {
-                System.out.println("O proprietário do NIF não possui nenhuma casa! Não foi possível adicionar o dispositivo!");
-            }
+                "Obter replica",
         });
 
-        menuDevices.setHandler(3,()-> {
-            try {
-                Scanner scanner = new Scanner(System.in);
-                System.out.println("Insira o NIF do proprietário da Casa:");
-                int nif = is.nextInt();
-                System.out.println("Insira o nome da Divisão da casa a que pretende adicionar a SmartCamera:");
-                String nomeDivisao = scanner.nextLine();
-                System.out.println("Insira o nome do dispositivo");
-                String nome = scanner.nextLine();
-                System.out.println("Insira o tamanho do ficheiro da camara (em Gigabytes):");
-                int size = is.nextInt();
-                System.out.println("Insira a resolução da câmara:");
-                String resolution = scanner.nextLine();
-                SmartCamera smartcamera = new SmartCamera(nome, resolution, size);
-                controller.addDevice(nif, nomeDivisao, smartcamera);
-            } catch (NumberFormatException e) {
-                System.out.println("O último dado introduzido não está na forma correta. Não foi possível adicionar o dispositivo!");
-            } catch (DispositivoExisteNaDivisaoException e) {
-                System.out.println(e.getMessage() + "Não foi possível adicionar o dispositivo!");
-            } catch (NullPointerException e) {
-                System.out.println("O proprietário do NIF não possui nenhuma casa! Não foi possível adicionar o dispositivo!");
-            }
+        Menu MenuEditing = new Menu(new String[]{
+                "Inserir um novo ficheiro",
+                "Remover Ficheiro",
+                "Adicionar Utilizador",
+                "Remover Utilizador",
+                "Classificar ficheiro",
+                "Chat"
         });
 
-        NewMenu menuQueries = new NewMenu(new String[]{
-                "Qual  ́e a casa que mais gastou num Periodo de Tempo",
-                "Qual o comercializador com maior volume de faturação",
-                "Listar as facturas emitidas por um comercializador",
-                "Dar uma ordena̧ção dos maiores consumidores de energia durante um Periodo a determinar"
+        MenuEditing.setHandler(1, () -> {
+            System.out.println("Nome do Ficheiro:");
+            String nomeFicheiro = scanner.nextLine();
+            System.out.println("Path do Ficheiro:");
+            String path = scanner.nextLine();
+            controller.addFile(nomeFicheiro, path);
         });
 
-        menuQueries.setHandler(1, () -> {
-            try {
-                System.out.println("Insira a data inical (Formato dd/mm/aaaa) ");
-                String inputdatainic = scanner.nextLine();
-                DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("d/M/yyyy");
-                LocalDate dateinic = LocalDate.parse(inputdatainic, dateFormat);
-                System.out.println("Insira a data final(Formato dd/mm/aaaa):");
-                String inputdatafim = scanner.nextLine();
-                LocalDate datefim = LocalDate.parse(inputdatafim, dateFormat);
-                System.out.println("A casa que mais gastou no periodo entre " + dateinic + " e " + datefim + " foi:\n" + controller.executaQuery1(dateinic, datefim));
-                if (datefim.compareTo(dateinic) < 0)
-                    throw new DataNaoValidaException("A data inserida é anterior à data atual!");
-            } catch (DateTimeParseException e) {
-                System.out.println("A data não se encontra na formatação correta.\nSimulação não realizada");
-            }
-            catch (DataNaoValidaException e) {
-                System.out.println(e.getMessage());
-            }
+        MenuEditing.setHandler(6, () -> {
+            controller.chat();
         });
 
-        menuQueries.setHandler(2, () -> {
-            System.out.println("O fornecedor com maior volume de faturação é:\n" + controller.executaQuery2());
-        });
-
-        menuQueries.setHandler(3, () -> {
-            try {
-                System.out.println("Insira o nome do comercializador");
-                String nome = scanner.nextLine();
-                System.out.println("O fornecedor emitiu as seguintes faturas:\n" + controller.executaQuery3(nome));
-            } catch (CasaExceptionFornecedorNaoExiste e) {
-                System.out.println(e.getMessage());
-            }
-        });
-
-        menuQueries.setHandler(4, () -> {
-            try {
-                System.out.println("Insira a data inical (Formato dd/mm/aaaa) ");
-                String inputdatainic = scanner.nextLine();
-                DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("d/M/yyyy");
-                LocalDate dateinic = LocalDate.parse(inputdatainic, dateFormat);
-                System.out.println("Insira a data final(Formato dd/mm/aaaa):");
-                String inputdatafim = scanner.nextLine();
-                LocalDate datefim = LocalDate.parse(inputdatafim, dateFormat);
-                if (datefim.compareTo(dateinic) < 0)
-                    throw new DataNaoValidaException("A data inserida é anterior à data atual!");
-                System.out.println("Os maiores consumidores de energia no periodo entre " + dateinic + " e " + datefim + " foram:\n" + controller.executaQuery4(dateinic, datefim));
-            } catch (DateTimeParseException e) {
-                System.out.println("A data não se encontra na formatação correta.\nSimulação não realizada");
-            }
-            catch (DataNaoValidaException e) {
-                System.out.println(e.getMessage());
-            }
-
-        });
-        */
-        //menuInicial.setPreCondition (2, controller::Precondition2);
-        //menuInicial.setPreCondition(3, controller::Precondition4);
-        //menuInicial.setPreCondition(4, controller::Precondition4);
-        //menuInicial.setPreCondition(5, controller::Precondition4);//são iguais
-        //menuInicial.setPreCondition(6, controller::Precondition6);
-        //menuInicial.setPreCondition(11, controller::Precondition4);
 
         //Fazer o registo
         menuInicial.setHandler(1, () -> {
@@ -211,7 +69,12 @@ public class Main {
         menuInicial.setHandler(5, () -> {
             System.out.println("Nome do Album:");
             String nome = scanner.nextLine();
-            controller.getAlbum(nome);
+            Boolean edition =controller.getAlbum(nome);
+            if (edition) {
+                MenuEditing.run();
+            }
+
+
         });
 
         menuInicial.setPreCondition(1, () -> !controller.Precondition1());

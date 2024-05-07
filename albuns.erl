@@ -1,5 +1,5 @@
 -module(albuns).
--export([start_server_albuns/0,create_Album/1,stop_server_albuns/0,list_Album/1,get_Album/1]).
+-export([start_server_albuns/0,create_Album/1,stop_server_albuns/0,list_Album/1,add_editor/1,get_Album/1]).
 -record(album, {users = [], content = #{}}).
 %-record(file, {hash, pontuation = #{}}).
 
@@ -16,6 +16,8 @@ list_Album({User})->
 get_Album({Nome,User})->
     rpc({get_album,Nome,User}).
 
+add_editor({Name, User, IP, Port})->
+    rpc({add_editor, Name, User, IP, Port}).
 
 %update_Album(Album) ->
     %update_Album(Album).
@@ -34,7 +36,7 @@ handle({create_album, Name, User}, {Albuns, User_index}) ->
     case maps:find(Name, Albuns) of
         {ok, _Value} -> {album_exists, {Albuns, User_index}};
         error ->
-            New_Albuns = maps:put(Name, A, Albuns),
+            New_Albuns = maps:put(Name, {A,[]}, Albuns),
             case maps:find(User, User_index) of
                 {ok, Value} -> 
                     New_User_index=maps:update(User, [Name | Value], User_index),
@@ -57,12 +59,28 @@ handle({get_album, Name, User}, {Albuns, User_index}) ->
     case maps:find(User, User_index) of
         {ok, Value} -> case lists:member(Name, Value) of 
             true -> case maps:find(Name, Albuns) of
-                    {ok, Album} -> {Album,{Albuns, User_index}};
+                    {ok, {Album,_}} -> 
+                        {Album,{Albuns, User_index}};
                     error -> {no_exists,{Albuns, User_index}}              
                 end;
             false -> {Res_error,{Albuns, User_index}}
         end;
         error ->  {Res_error,{Albuns, User_index}}
+    end;
+
+handle({add_editor, Name, User, IP, Port}, {Albuns, User_index}) ->
+    case maps:find(User, User_index) of
+        {ok, Value} -> case lists:member(Name, Value) of 
+            true -> case maps:find(Name, Albuns) of
+                    {ok, {Album,Editors}} -> 
+                        New_Editors = lists:append(Editors, [{IP,Port,User}]),
+                        New_Albuns = maps:update(Name, {Album,New_Editors}, Albuns),
+                        {New_Editors,{New_Albuns, User_index}};
+                    error -> {no_exists,{Albuns, User_index}}              
+                end;
+            false -> {no_autorization,{Albuns, User_index}}
+        end;
+        error ->  {no_autorization,{Albuns, User_index}}
     end.
 
 loop({Albuns,User_index}) -> 
