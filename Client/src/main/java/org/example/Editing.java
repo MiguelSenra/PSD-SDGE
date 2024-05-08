@@ -12,39 +12,47 @@ public class Editing {
     //private Scanner scanner;
 
     private ArrayList<Zone> members;
-    private Map<String,Object> album;
+    //private Map<String,Object> album;
 
     AlbumCRDT albumCRDT;
 
-    private CausalBroadcast cb= new CausalBroadcast();
+    //private CausalBroadcast cb= new CausalBroadcast();
      String username;
+
+     String albumName;
 
     ZContext context;
 
     ZMQ.Socket socket;
+    ZMQ.Socket socket1;
 
 
-    public Editing(String username, long portNUmber, ArrayList<Zone> members, Map<String,Object> album) {
+    public Editing(String username,String AlbumName,long portNUmber, ArrayList<Zone> members, Map<String,Object> album) {
             this.albumCRDT=new AlbumCRDT(album,username);
+            this.albumName=AlbumName;
             this.context = new ZContext();
             this.socket = context.createSocket(SocketType.ROUTER);
             this.username=username;
 
             Thread replyThread = new Thread(() -> {
                 try (ZContext context1 = new ZContext()) {
-                    ZMQ.Socket socket1 = context1.createSocket(SocketType.ROUTER);
-                    socket1.setIdentity(username.getBytes(ZMQ.CHARSET));
-                    socket1.bind("tcp://localhost:" + portNUmber);
+                    this.socket1 = context1.createSocket(SocketType.ROUTER);
+                    this.socket1.setIdentity(username.getBytes(ZMQ.CHARSET));
+                    this.socket1.bind("tcp://localhost:" + portNUmber);
                     CausalBroadcast causal = new CausalBroadcast();
                     //while (!Thread.currentThread().isInterrupted()) {
                     while (true) {
                         byte[] id = socket1.recv();
                         byte[] req = socket1.recv();
-                        if (req == null) {
-                            continue; // No message, go back to recv
+                        if (req != null) {
+                            Message1 deserializedMessage = SerializationUtils.deserializeObject(req);
+                            if (deserializedMessage != null) {
+                                albumCRDT.newState(deserializedMessage);
+                            }
                         }
-                        Message1 deserializedMessage = SerializationUtils.deserializeObject(req);
-                        System.out.println(deserializedMessage);
+
+                        //System.out.println(deserializedMessage);
+
                         //aqui
                         //byte[] id = socket1.recv();
                         //byte[] res = socket1.recv();
@@ -93,12 +101,24 @@ public class Editing {
             //scanner.close();
         }
 
-    public void addUser(String nome) {
-        Message1 msg=this.albumCRDT.addUser(nome);
+    public void sendMessage(Message1 msg) {
         byte[] data = SerializationUtils.serializeObject(msg);
         socket.sendMore(this.username.getBytes(ZMQ.CHARSET));
         socket.send(data, 0);
+    }
+    public void addUser(String nome) {
+        Message1 msg=this.albumCRDT.addUser(nome);
+        this.sendMessage(msg);
+    }
 
+    public Map<String,Object> TerminateEdition() {
+        this.socket.close();
+        this.context.close();
+        return this.albumCRDT.Album_Send();
+    }
 
+    public void removeUser(String nome) {
+        Message1 msg=this.albumCRDT.removeUser(nome);
+        this.sendMessage(msg);
     }
 }

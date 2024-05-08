@@ -1,5 +1,5 @@
 -module(albuns).
--export([start_server_albuns/0,create_Album/1,stop_server_albuns/0,list_Album/1,add_editor/1,get_Album/1]).
+-export([start_server_albuns/0,create_Album/1,stop_server_albuns/0,list_Album/1,add_editor/1,terminate_edit_Album/1,get_Album/1]).
 -record(album, {users = [], content = #{}}).
 %-record(file, {hash, pontuation = #{}}).
 
@@ -19,6 +19,8 @@ get_Album({Nome,User})->
 add_editor({Name, User, IP, Port})->
     rpc({add_editor, Name, User, IP, Port}).
 
+terminate_edit_Album({Name, User,Members})->
+    rpc({terminate_edit_Album, Name, User, Members}).
 %update_Album(Album) ->
     %update_Album(Album).
 
@@ -81,7 +83,46 @@ handle({add_editor, Name, User, IP, Port}, {Albuns, User_index}) ->
             false -> {no_autorization,{Albuns, User_index}}
         end;
         error ->  {no_autorization,{Albuns, User_index}}
+    end;
+
+handle({terminate_edit_Album, Name, User, Members}, {Albuns, User_index}) ->
+    case maps:find(Name, Albuns) of
+        {ok, {Album, Editors}} ->
+            {Users_const, Users_removidos} = lists:partition(fun(X) -> lists:member(X, Members) end, Album#album.users),
+            Users_novos = lists:filter(fun(X) -> not lists:member(X, Users_const) end, Members),
+            New_Album = Album#album{users = lists:append(Users_novos, Users_const)},
+            New_Editors = remove_user_from_editors(User, Editors),
+            New_Albuns = maps:update(Name, {New_Album, New_Editors}, Albuns),
+            New_User_index = lists:foldl(fun(X, Acc) ->
+                case maps:find(X, Acc) of
+                    {ok, Value} ->
+                        NewValue = lists:append(Value, [Name]),
+                        maps:update(X, NewValue, Acc);
+                    error ->
+                        maps:put(X, [Name], Acc)
+                end
+            end, User_index, Users_novos),
+            Updated_User_index = lists:foldl(fun(X, Acc) ->
+                case maps:find(X, Acc) of
+                    {ok, Value} ->
+                        NewValue = lists:delete(Name, Value),
+                        maps:update(X, NewValue, Acc);
+                    error ->
+                        pass
+                end
+            end, New_User_index, Users_removidos),
+            {ok,{New_Albuns, Updated_User_index}};
+        error -> {no_exists, {Albuns, User_index}}
     end.
+
+remove_user_from_editors(_User, []) ->
+    [];
+remove_user_from_editors(User, [{_, _, UserName} | Tail]) when UserName == User ->
+    remove_user_from_editors(User, Tail);
+remove_user_from_editors(User, [Head | Tail]) ->
+    [Head | remove_user_from_editors(User, Tail)].
+
+
 
 loop({Albuns,User_index}) -> 
     receive 

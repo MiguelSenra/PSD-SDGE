@@ -72,6 +72,13 @@ process_tcp_messages(Sock) ->
                     gen_tcp:send(Sock, term_to_binary(Res)),
                     gen_tcp:close(Sock),
                     process_tcp_messages(Sock);
+                    {terminate_edit_Album,Values} ->
+                    io:format("terminar edição do album:~n", []),
+                    Res=albuns:terminate_edit_Album(Values),
+                    io:format("editores do album1:~n~p", [Res]),
+                    gen_tcp:send(Sock, term_to_binary(Res)),
+                    gen_tcp:close(Sock),
+                    process_tcp_messages(Sock);
                 {new_data_server,Values} ->
                     io:format("Novo servidor de dados:~n~p", [Values]),
                     Res=server_data:new_server(Values),

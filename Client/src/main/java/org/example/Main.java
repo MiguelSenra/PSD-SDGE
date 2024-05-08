@@ -78,6 +78,7 @@ public class Main {
             Boolean edition =controller.getAlbum(nome);
             if (edition) {
                 MenuEditing.run();
+                controller.TerminateEdition();
             }
 
 

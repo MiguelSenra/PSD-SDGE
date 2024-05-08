@@ -39,6 +39,10 @@ public class Controller {
         this.sistema.BeginEdition(nomeAlbum);
     }
 
+    public void TerminateEdition() {
+        this.sistema.TerminateEdition();
+    }
+
     public void chat() {
         this.sistema.chat();
     }
@@ -46,5 +50,6 @@ public class Controller {
     public void addUser(String nome) {
         this.sistema.addUser(nome);
     }
+
 
 }

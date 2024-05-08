@@ -170,7 +170,7 @@ public class Sistema {
                     }
                     albumData.put("ficheiros", ficheiros);
                     ArrayList<Zone> editors=BeginEdition(nome);
-                    this.editing=new Editing(this.username, 12346,editors,albumData);
+                    this.editing=new Editing(this.username,nome,12346,editors,albumData);
 
                     // Mostrar os dados do álbum
                     System.out.println("Dados do álbum: " + albumData);
@@ -244,7 +244,7 @@ public class Sistema {
                                 new OtpErlangString(albumName),
                                 new OtpErlangString(this.username),
                                 new OtpErlangString("localhost"),
-                                new OtpErlangLong(12347)
+                                new OtpErlangLong(12346)
                         })
                 };
                 OtpErlangTuple message = new OtpErlangTuple(tuple);
@@ -304,6 +304,70 @@ public class Sistema {
             System.err.println("Erro ao conectar ao servidor: " + e.getMessage());
         }
         return new ArrayList<>();
+    }
+
+    public void TerminateEdition() {
+        Map<String,Object> album=this.editing.TerminateEdition();
+        System.out.println("Album terminado com sucesso!");
+        ArrayList<String> membros= (ArrayList<String>) album.get("membros");
+        System.out.println("Membros do album: "+membros);
+        OtpErlangObject[] elements = new OtpErlangObject[membros.size()];
+        for (int i = 0; i < membros.size(); i++) {
+            elements[i] = new OtpErlangString(membros.get(i));
+        }
+        try {
+            SocketChannel ss1 = SocketChannel.open(new InetSocketAddress((int) portNumber));
+            try {
+                OtpErlangObject[] tuple = new OtpErlangObject[]{
+                        new OtpErlangAtom("terminate_edit_Album"),
+                        new OtpErlangTuple(new OtpErlangObject[]{
+                                new OtpErlangString(this.editing.albumName),
+                                new OtpErlangString(this.username),
+                                new OtpErlangList(elements)
+                                }),
+                };
+                OtpErlangTuple message = new OtpErlangTuple(tuple);
+                System.out.println(message);
+                ByteBuffer bb = ByteBuffer.wrap(tupleToBytes(message));
+                ss1.write(bb);
+                bb.clear();
+                int bytesRead;
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                while ((bytesRead = ss1.read(bb)) != -1) {
+                    System.out.println("Lidos " + bytesRead + " bytes do socket.");
+                    bb.flip();
+                    byte[] receivedBytes = new byte[bb.remaining()];
+                    bb.get(receivedBytes);
+                    baos.write(receivedBytes);
+                    bb.clear();
+                }
+
+                byte[] receivedBytes = baos.toByteArray();
+
+                System.out.println("OLAAAAAAAAAAAAA" + new String(receivedBytes));
+                OtpErlangTuple response = bytesToTuple(receivedBytes);
+                System.out.println("OLAAAAAAAAAAAAA");
+                OtpErlangObject[] fields = response.elements();
+                System.out.println("OLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+                System.out.println(response);
+                OtpErlangObject firstField = fields[0];
+                if (firstField instanceof OtpErlangAtom) {
+                    // Converter o átomo em uma string
+                    String error = ((OtpErlangAtom) firstField).atomValue();
+                    if (error.equals("no_autorization")) {
+                        System.out.println("Você não é membro desse álbum!");
+                    } else if (error.equals("no_exists")) {
+                        System.out.println("O álbum indicado não existe!");
+                    }
+                }
+
+            } catch (Exception e) {
+                System.out.println("Erro" + e.getMessage());
+            }
+        }
+        catch (IOException e) {
+            System.err.println("Erro ao conectar ao servidor: " + e.getMessage());
+        }
     }
 
     public void chat(){
