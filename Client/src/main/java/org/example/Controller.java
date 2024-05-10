@@ -31,25 +31,34 @@ public class Controller {
         return this.sistema.getAlbum(nome);
     }
 
+    /*public void BeginEdition(String nomeAlbum, String username) {
+        this.sistema.BeginEdition(nomeAlbum);
+    }
+    */
+    public void TerminateEdition() {
+        this.sistema.TerminateEdition();
+    }
+
+
+
     public void addFile(String nomeFile, String path) {
         this.sistema.addFile(nomeFile, path);
     }
-
-    public void BeginEdition(String nomeAlbum, String username) {
-        this.sistema.BeginEdition(nomeAlbum);
+    public void removeFile(String nomeFile) {
+        this.sistema.removeFile(nomeFile);
     }
 
-    public void TerminateEdition() {
-        this.sistema.TerminateEdition();
+    public void addUser(String nome) {
+        this.sistema.addUser(nome);
+    }
+    public void removeUser(String nome) {
+        this.sistema.removeUser(nome);
     }
 
     public void chat() {
         this.sistema.chat();
     }
 
-    public void addUser(String nome) {
-        this.sistema.addUser(nome);
-    }
 
 
 }

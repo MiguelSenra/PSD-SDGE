@@ -11,7 +11,7 @@ public class Editing {
 
     //private Scanner scanner;
 
-    private ArrayList<Zone> members;
+    private ArrayList<Editor> members;
     //private Map<String,Object> album;
 
     AlbumCRDT albumCRDT;
@@ -27,56 +27,64 @@ public class Editing {
     ZMQ.Socket socket1;
 
 
-    public Editing(String username,String AlbumName,long portNUmber, ArrayList<Zone> members, Map<String,Object> album) {
+    public Editing(String username,String AlbumName,long portNUmber, ArrayList<Editor> members, Map<String,Object> album) {
             this.albumCRDT=new AlbumCRDT(album,username);
             this.albumName=AlbumName;
             this.context = new ZContext();
             this.socket = context.createSocket(SocketType.ROUTER);
             this.username=username;
+            this.members=members;
 
             Thread replyThread = new Thread(() -> {
                 try (ZContext context1 = new ZContext()) {
                     this.socket1 = context1.createSocket(SocketType.ROUTER);
                     this.socket1.setIdentity(username.getBytes(ZMQ.CHARSET));
                     this.socket1.bind("tcp://localhost:" + portNUmber);
-                    CausalBroadcast causal = new CausalBroadcast();
+                    //CausalBroadcast causal = new CausalBroadcast();
                     //while (!Thread.currentThread().isInterrupted()) {
                     while (true) {
                         byte[] id = socket1.recv();
                         byte[] req = socket1.recv();
                         if (req != null) {
-                            Message1 deserializedMessage = SerializationUtils.deserializeObject(req);
-                            if (deserializedMessage != null) {
-                                albumCRDT.newState(deserializedMessage);
+                            Message deserializedMessage = SerializationUtils.deserializeObject(req);
+                            if(deserializedMessage != null) {
+                                if (deserializedMessage instanceof State_CRDT_Message) {
+                                    albumCRDT.newState((State_CRDT_Message) deserializedMessage);
+                                } else if (deserializedMessage instanceof ChatMessage){
+                                    ChatMessage msg = (ChatMessage) deserializedMessage;
+                                    System.out.println("[" + new String(id, ZMQ.CHARSET) + "]: " + msg.getText());
+                                }
+                                else if (deserializedMessage instanceof JoinMessage) {
+                                    JoinMessage msg = (JoinMessage) deserializedMessage;
+                                    this.members.add(msg.getUser());
+                                    socket.connect("tcp://localhost:" + msg.getUser().getPort());
+                                }
+                                else if (deserializedMessage instanceof ExitMessage) {
+                                    System.out.println("oleeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+                                    ExitMessage msg = (ExitMessage) deserializedMessage;
+                                    this.members.remove(msg.getUser());
+                                    if (msg.getUser().getuser().equals(username)) {
+                                        break;
+                                    }
+                                }
                             }
                         }
-
-                        //System.out.println(deserializedMessage);
-
-                        //aqui
-                        //byte[] id = socket1.recv();
-                        //byte[] res = socket1.recv();
-                        //System.out.println(new String(res, ZMQ.CHARSET));
-                        //System.out.println("[" + new String(id, ZMQ.CHARSET) + "]: " + new String(req, ZMQ.CHARSET));
-                        //Body body = new Body(req, ZMQ.CHARSET);
-                        //Message msg = new Message(Integer(id), body);
-                        //causal.fwdMsg(msg);
-
-                        // Envio da resposta
-                        //socket1.sendMore(req);
-                        //socket1.send("whatup".getBytes(ZMQ.CHARSET), 0);
                     }
                 }
             });
             replyThread.start();
             socket.setIdentity(username.getBytes(ZMQ.CHARSET));
-            System.out.println("aquiiiiiiiiiiiiiiiiiiiiii"+members);
-            this.socket.connect("tcp://localhost:" + 12346);
-            /*
-            for (int i = 0; i < members.size(); i++) {
-                System.out.println("ola"+members.get(i).getHash());
-                this.socket.connect("tcp://localhost:" + members.get(i).getPort());
-            }*/
+            //this.socket.connect("tcp://localhost:" + 12346);
+
+            Editor self=new Editor();
+            for (int i = 0; i < this.members.size(); i++) {
+                if (this.members.get(i).getuser().equals(username)) {
+                    self = new Editor(members.get(i));
+                }
+                System.out.println("tcp://localhost:" + this.members.get(i).getPort());
+                this.socket.connect("tcp://localhost:" + this.members.get(i).getPort());
+           }
+            sendMessage(new JoinMessage(self),false);
     }
 
     public void chat() {
@@ -85,8 +93,9 @@ public class Editing {
                 String message;
                 while(scanner.hasNextLine() && !(message = scanner.nextLine()).equals("")) {// Aguarda pressionar Enter
                     //socket.sendMore("arg[]".getBytes(ZMQ.CHARSET));
-                    socket.sendMore(this.username.getBytes(ZMQ.CHARSET));
-                    socket.send(message.getBytes(ZMQ.CHARSET), 0);
+                    //socket.sendMore(this.username.getBytes(ZMQ.CHARSET));
+                    //socket.send(message.getBytes(ZMQ.CHARSET), 0);
+                    sendMessage(new ChatMessage(message),true);
                     System.out.println("enviou");
                     //socket.sendMore("server1".getBytes(ZMQ.CHARSET));
                     //socket.send(message.getBytes(ZMQ.CHARSET), 0);
@@ -96,29 +105,54 @@ public class Editing {
                 scanner.next();
                 scanner.close();
             }
-        System.out.println("Erro1:");
             //scanner.reset();
             //scanner.close();
         }
 
-    public void sendMessage(Message1 msg) {
+    public void sendMessage(Message msg,boolean idincluded) {
         byte[] data = SerializationUtils.serializeObject(msg);
-        socket.sendMore(this.username.getBytes(ZMQ.CHARSET));
-        socket.send(data, 0);
+        for (int i = 0; i < this.members.size(); i++) {
+            if (!idincluded && this.members.get(i).getuser().equals(this.username)) {
+                socket.sendMore(this.members.get(i).getuser().getBytes(ZMQ.CHARSET));
+                socket.send(data, 0);
+            }
+            else {
+                socket.sendMore(this.members.get(i).getuser().getBytes(ZMQ.CHARSET));
+                socket.send(data, 0);
+            }
+        }
     }
-    public void addUser(String nome) {
-        Message1 msg=this.albumCRDT.addUser(nome);
-        this.sendMessage(msg);
-    }
-
     public Map<String,Object> TerminateEdition() {
+        System.out.println(members);
+        for (int i = 0; i < members.size(); i++) {
+            if (members.get(i).getuser().equals(username)) {
+                sendMessage(new ExitMessage(new Editor(members.get(i))),true);
+                break;
+            }
+        }
         this.socket.close();
         this.context.close();
         return this.albumCRDT.Album_Send();
     }
+    public void addUser(String nome) {
+        State_CRDT_Message msg=this.albumCRDT.addUser(nome);
+        this.sendMessage(msg,false);
+    }
 
     public void removeUser(String nome) {
-        Message1 msg=this.albumCRDT.removeUser(nome);
-        this.sendMessage(msg);
+        State_CRDT_Message msg=this.albumCRDT.removeUser(nome);
+        this.sendMessage(msg,false);
     }
+
+    public void addFile(String nomeFile, String hash) {
+        State_CRDT_Message msg= this.albumCRDT.addFile(nomeFile,hash);
+        this.sendMessage(msg,false);
+    }
+
+    public void removeFile(String nomeFile) {
+        State_CRDT_Message msg= this.albumCRDT.removeFile(nomeFile);
+        this.sendMessage(msg,false);
+    }
+
+
 }

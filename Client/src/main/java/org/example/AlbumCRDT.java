@@ -8,11 +8,12 @@ public class AlbumCRDT {
     private Map<String, Integer> vv;
     private Map <String,Object> album;
 
-    private String username;
+    private final String username;
 
     public AlbumCRDT( Map <String,Object> album,String username) {
         this.vv = new HashMap<>();
         this.vv.put(username, 0);
+        this.username= username;
         this.album = album;
     }
     public void incClock() {
@@ -27,39 +28,54 @@ public class AlbumCRDT {
         return new HashMap<>(album);
     }
 
-    public void setMessage(Map <String,Object> album) {
+    public void setAlbum(Map <String,Object> album) {
         this.album = album;
     }
 
-    public  Message1 addUser(String nome) {
+    public  State_CRDT_Message addFile(String nameFile, String hash) {
+        Map<String,File_CRDT> ficheiros=(Map<String,File_CRDT>) this.album.get("ficheiros");
+        this.incClock();
+        Map<String,Integer> clocks= this.getVv();
+        File_CRDT file= new File_CRDT(clocks,hash);
+        ficheiros.put(nameFile,file);
+        this.album.put("ficheiros",ficheiros);
+        return new State_CRDT_Message(clocks,getAlbum());
+    }
+
+    public  State_CRDT_Message removeFile(String nameFile) {
+        Map<String,File_CRDT> ficheiros=(Map<String,File_CRDT>) this.album.get("ficheiros");
+        this.incClock();
+        Map<String,Integer> clocks= this.getVv();
+        ficheiros.remove(nameFile);
+        this.album.put("ficheiros",ficheiros);
+        return new State_CRDT_Message(clocks,getAlbum());
+    }
+
+    public  State_CRDT_Message addUser(String nome) {
         Map<String,Map<String,Integer>> membros=(Map<String,Map<String,Integer>>) this.album.get("membros");
         this.incClock();
         Map<String,Integer> clocks= this.getVv();
         membros.put(nome,clocks);
         album.put("membros",membros);
-        Message1 msg= new Message1(clocks,getAlbum());
-        return msg;
+        return new State_CRDT_Message(clocks,getAlbum());
     }
 
-    public  Message1 removeUser(String nome) {
+    public  State_CRDT_Message removeUser(String nome) {
         Map<String,Map<String,Integer>> membros=(Map<String,Map<String,Integer>>) this.album.get("membros");
         this.incClock();
         Map<String,Integer> clocks= this.getVv();
-        if (membros.containsKey(nome)) {
-            membros.remove(nome);
-        }
+        membros.remove(nome);
         album.put("membros",membros);
-        Message1 msg= new Message1(clocks,getAlbum());
-        return msg;
+        return new State_CRDT_Message(clocks,getAlbum());
     }
 
-    public void newState(Message1 message) {
+    public void newState(State_CRDT_Message message) {
         // Compara os relógios vetoriais
         int cmp = message.compareVectorClocks(this.vv,message.getVv());
         if (cmp == -1) {
             this.album = message.getAlbum();
         } else if (cmp == 0) {
-            Message1 msg =message.mergeStates(this);
+            State_CRDT_Message msg =message.mergeStates(this);
             this.vv= msg.getVv();
             this.album= msg.getAlbum();
         }
@@ -67,9 +83,14 @@ public class AlbumCRDT {
 
     public HashMap<String,Object> Album_Send() {
         HashMap<String,Object> album= new HashMap<>();
+        HashMap<String,String> ficheiros = new HashMap<>();
+        for (Map.Entry<String,File_CRDT> entry: ((Map<String,File_CRDT>) this.album.get("ficheiros")).entrySet()) {
+            ficheiros.put(entry.getKey(),entry.getValue().getHash());
+        }
         album.put("ficheiros",new HashMap<String,String>());
         HashMap<String,Map<String,Integer>> membros= (HashMap<String,Map<String,Integer>>) this.album.get("membros");
         album.put("membros",new ArrayList<String>(membros.keySet()));
+
         return album;
     }
 }

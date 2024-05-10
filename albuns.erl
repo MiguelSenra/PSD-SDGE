@@ -19,8 +19,8 @@ get_Album({Nome,User})->
 add_editor({Name, User, IP, Port})->
     rpc({add_editor, Name, User, IP, Port}).
 
-terminate_edit_Album({Name, User,Members})->
-    rpc({terminate_edit_Album, Name, User, Members}).
+terminate_edit_Album({Name, User,Files,Members})->
+    rpc({terminate_edit_Album, Name, User, Files, Members}).
 %update_Album(Album) ->
     %update_Album(Album).
 
@@ -58,6 +58,7 @@ handle({list_album,User}, {Albuns, User_index}) ->
 handle({get_album, Name, User}, {Albuns, User_index}) ->
     %Res_error= "Não possui autorização para acessar o album!",
     Res_error= no_autorization,
+    io:format("aqui:~n", []),
     case maps:find(User, User_index) of
         {ok, Value} -> case lists:member(Name, Value) of 
             true -> case maps:find(Name, Albuns) of
@@ -85,12 +86,12 @@ handle({add_editor, Name, User, IP, Port}, {Albuns, User_index}) ->
         error ->  {no_autorization,{Albuns, User_index}}
     end;
 
-handle({terminate_edit_Album, Name, User, Members}, {Albuns, User_index}) ->
+handle({terminate_edit_Album, Name, User, Files, Members}, {Albuns, User_index}) ->
     case maps:find(Name, Albuns) of
         {ok, {Album, Editors}} ->
             {Users_const, Users_removidos} = lists:partition(fun(X) -> lists:member(X, Members) end, Album#album.users),
             Users_novos = lists:filter(fun(X) -> not lists:member(X, Users_const) end, Members),
-            New_Album = Album#album{users = lists:append(Users_novos, Users_const)},
+            New_Album = Album#album{users = Members, content = Files},
             New_Editors = remove_user_from_editors(User, Editors),
             New_Albuns = maps:update(Name, {New_Album, New_Editors}, Albuns),
             New_User_index = lists:foldl(fun(X, Acc) ->

@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/*
 public class CausalBroadcast {
 
     private Map<String, Integer> vv = new HashMap<>();
@@ -64,7 +65,7 @@ public class CausalBroadcast {
             }
         }
     }
-    */
+
     public void fwdMsg(Message msg) {
         if (canDeliver(msg)) {
             deliverMessage(msg);
@@ -75,5 +76,6 @@ public class CausalBroadcast {
     /* 
     public static void main(String[] args) {
         receive(); // Assuming receive method is defined somewhere
-    }*/
+    }
 }
+*/

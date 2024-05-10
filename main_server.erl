@@ -64,6 +64,7 @@ process_tcp_messages(Sock) ->
                     Res=albuns:get_Album(Values),
                     io:format("Estado do album:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
+                    gen_tcp:close(Sock),
                     process_tcp_messages(Sock);
                 {add_editor,Values} ->
                     io:format("add editor do album:~n", []),
@@ -72,7 +73,7 @@ process_tcp_messages(Sock) ->
                     gen_tcp:send(Sock, term_to_binary(Res)),
                     gen_tcp:close(Sock),
                     process_tcp_messages(Sock);
-                    {terminate_edit_Album,Values} ->
+                {terminate_edit_Album,Values} ->
                     io:format("terminar edição do album:~n", []),
                     Res=albuns:terminate_edit_Album(Values),
                     io:format("editores do album1:~n~p", [Res]),

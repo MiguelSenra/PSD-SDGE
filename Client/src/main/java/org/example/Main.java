@@ -34,10 +34,21 @@ public class Main {
             controller.addFile(nomeFicheiro, path);
         });
 
+        MenuEditing.setHandler(2,() -> {
+            System.out.println("Nome do ficheiro:");
+            String nome = scanner.nextLine();
+            controller.removeFile(nome);
+        });
+
         MenuEditing.setHandler(3,() -> {
             System.out.println("Nome do Utilizador:");
             String nome = scanner.nextLine();
             controller.addUser(nome);
+        });
+        MenuEditing.setHandler(4,() -> {
+            System.out.println("Nome do Utilizador:");
+            String nome = scanner.nextLine();
+            controller.removeUser(nome);
         });
 
         MenuEditing.setHandler(6, () -> {

@@ -1,12 +1,12 @@
 package org.example;
-import org.example.Message1;
+import org.example.State_CRDT_Message;
 
 import java.io.*;
 
 public class SerializationUtils {
 
     // Serializar objeto para array de bytes
-    public static byte[] serializeObject(Message1 obj) {
+    public static byte[] serializeObject(Message obj) {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(bos)) {
             oos.writeObject(obj);
@@ -18,10 +18,10 @@ public class SerializationUtils {
     }
 
     // Desserializar array de bytes para objeto
-    public static Message1 deserializeObject(byte[] data) {
+    public static Message deserializeObject(byte[] data) {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
              ObjectInputStream ois = new ObjectInputStream(bis)) {
-            return (Message1) ois.readObject();
+            return (Message) ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
             return null;

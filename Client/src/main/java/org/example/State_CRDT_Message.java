@@ -4,11 +4,12 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Message1 implements Serializable {
+public class State_CRDT_Message extends Message implements Serializable  {
     private Map<String, Integer> vv;
     private Map<String, Object> album;
 
-    public Message1(Map<String, Integer> vv, Map<String, Object> album) {
+    public State_CRDT_Message(Map<String, Integer> vv, Map<String, Object> album) {
+        super();
         this.vv = vv;
         this.album = album;
     }
@@ -102,9 +103,70 @@ public class Message1 implements Serializable {
         return mergedClock;
     }
 
-    public Message1 mergeStates(AlbumCRDT state1) {
+    public Map<String,File_CRDT> mergeFiles(Map<String,File_CRDT> actual_state,Map<String,Integer> actual_clock) {
+        Map<String,File_CRDT> incoming_state= (Map<String,File_CRDT>) this.album.get("ficheiros");
+        Map<String,File_CRDT> newFiles = new HashMap<>();
+        if (actual_state != null && incoming_state != null) {
+            // Realizar merge para cada membro
+            for (Map.Entry<String, File_CRDT> entry : actual_state.entrySet()) {
+                String fileName = entry.getKey();
+                Map<String, Integer> clock1 = entry.getValue().getVv();
+
+                if (incoming_state.containsKey(fileName)) {
+                    int comparisonResult = this.compareVectorClocks(clock1, incoming_state.get(fileName).getVv());
+
+                    if (comparisonResult > 0) {
+                        newFiles.put(fileName, entry.getValue());
+                    } else if (comparisonResult < 0) {
+                        newFiles.put(fileName, incoming_state.get(fileName));
+                    } else {
+                        String newhash;
+                        int result = entry.getValue().getHash().compareTo(incoming_state.get(fileName).getHash());
+                        if (result <= 0) {
+                            newhash=incoming_state.get(fileName).getHash();
+                        } else {
+                            newhash=entry.getValue().getHash();
+                        }
+                        newFiles.put(fileName,new File_CRDT(mergeClocks(clock1, incoming_state.get(fileName).getVv()),newhash));
+                    }
+                } else {
+                    int cmpClocks= this.compareVectorClocks(clock1,this.vv);
+                    if(cmpClocks==1){
+                        newFiles.put(fileName, entry.getValue());
+                    }
+                    else if (cmpClocks==0) {
+                        Map<String, Integer> newClock = mergeClocks(clock1,this.vv);
+                        newFiles.put(fileName, new File_CRDT(newClock,entry.getValue().getHash()));
+                    }
+
+                }
+            }
+
+            for (Map.Entry<String, File_CRDT> entry : incoming_state.entrySet()) {
+                String fileName = entry.getKey();
+                if (!actual_state.containsKey(fileName)) {
+                    int cmpClocks= this.compareVectorClocks(entry.getValue().getVv(),actual_clock);
+                    if(cmpClocks==1){
+                        newFiles.put(fileName, entry.getValue());
+                    }
+                    else if (cmpClocks==0) {
+                        Map<String, Integer> newClock = mergeClocks(entry.getValue().getVv(),actual_clock);
+                        newFiles.put(fileName,new File_CRDT(newClock,entry.getValue().getHash()));
+                    }
+                }
+            }
+
+
+        }
+        return newFiles;
+    }
+
+    public State_CRDT_Message mergeStates(AlbumCRDT state1) {
+
         // Criar um novo estado que será o resultado do merge
         Map<String, Object> mergedState = new HashMap<>();
+
+        mergedState.put("ficheiros",mergeFiles((Map<String, File_CRDT>) state1.getAlbum().get("ficheiros"),state1.getVv()));
 
         // Obter membros do álbum do estado 1
         Map<String, Map<String, Integer>> members1 = (Map<String, Map<String, Integer>>) state1.getAlbum().get("membros");
@@ -166,7 +228,7 @@ public class Message1 implements Serializable {
 
         Map<String, Integer> newClock = mergeClocks(this.vv,state1.getVv());
 
-        return new Message1(newClock,mergedState);
+        return new State_CRDT_Message(newClock,mergedState);
 
     }
 
