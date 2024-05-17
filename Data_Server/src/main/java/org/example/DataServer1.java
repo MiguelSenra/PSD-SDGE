@@ -14,9 +14,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -30,21 +28,21 @@ public class DataServer1 {
     private static final String ip = "localhost";
     private static final int portNumber = 12347;
 
-    private int Nr_keys=3;
+    private final int Nr_keys=3;
 
     private ArrayList<ZoneLimits> limits;
-
     private List<ZoneLimits> zoneLimits;
     public static void main(String[] args) throws Exception {
         DataServer1 server = new DataServer1();
         ArrayList<Zone> servers=server.OpenSession();
         ArrayList<Zone> vizinhos = server.getVizinhos(servers);
-        System.out.println(vizinhos.toString());
+        //System.out.println(vizinhos.toString());
         server.limits=server.getLimits(servers);
-        System.out.println(server.limits.toString());
+        //System.out.println(server.limits.toString());
         for (Zone z : vizinhos) {
             server.GetData(z);
-        }System.out.println("ativo");
+        }
+        //System.out.println("ativo");
         server.GRPCServer();
     }
 
@@ -53,12 +51,12 @@ public class DataServer1 {
         Boolean add =false;
         for (Zone z : servers) {
             if (add && (!z.getIp().equals(this.ip) ||  z.getPort()!=this.portNumber)){
-                System.out.println(z.toString());
+                //System.out.println(z);
                 vizinhos.add(z);
                 add=false;
             }
             else if (z.getIp().equals(this.ip) && z.getPort()==this.portNumber) {
-                System.out.println(z.toString());
+                //System.out.println(z);
                 add=true;
             }
         }
@@ -89,7 +87,7 @@ public class DataServer1 {
             hash_before = z.getHash();
         }
         //fecho do ciclo
-        if (servers.get(0).getIp().equals(this.ip) && servers.get(0).getPort()==this.portNumber) {
+        if (servers.getFirst().getIp().equals(this.ip) && servers.getFirst().getPort()==this.portNumber) {
             limits.add(new ZoneLimits(hash_before, calculateMaximumSHA256()));
         }
         return limits;
@@ -188,14 +186,14 @@ public class DataServer1 {
         TransferDataNewServerRequest request = TransferDataNewServerRequest.newBuilder()
                 .setSsaKey(z.getHash())
                 .build();
-    System.out.println("aqui");
+
         final FileOutputStream[] fileOutputStream = {null};
         // Submeter a solicitação de download e processar as respostas
         stub.transferDataNewServer(Flowable.just(request))
                 .map(response -> {
                     try {
                         if (response.getSeqNum()==1) {
-                            fileOutputStream[0] = new FileOutputStream("ola"+response.getFileName());
+                            fileOutputStream[0] = new FileOutputStream(response.getFileName());
                         }
                         // Escrever os bytes recebidos no arquivo
                         fileOutputStream[0].write(response.getChunk().toByteArray());

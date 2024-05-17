@@ -1,7 +1,5 @@
 package org.example;
 
-import java.util.Arrays;
-import java.util.Comparator;
 
 public class Zone implements Comparable<Zone>{
     private String ip;

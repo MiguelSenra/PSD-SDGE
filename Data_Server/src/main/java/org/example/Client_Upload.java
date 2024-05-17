@@ -28,7 +28,6 @@ public class Client_Upload {
                             emitter.onComplete();
                         } else {
                             FileUploadRequest request = FileUploadRequest.newBuilder()
-                                    .setFileName("heylaaa1.jpg")
                                     .setChunk(ByteString.copyFrom(buffer))
                                     .setSsaKey(Hashing.sha256().hashString("ola", java.nio.charset.StandardCharsets.UTF_8).toString())
                                     .build();

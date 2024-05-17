@@ -1,10 +1,10 @@
 package org.example;
 
+import java.io.Serializable;
 import java.util.Map;
 
-public class File_CRDT {
+public class File_CRDT implements Serializable {
     private Map<String, Integer> vv;
-
     private String hash;
 
     File_CRDT(Map<String, Integer> vv, String hash) {

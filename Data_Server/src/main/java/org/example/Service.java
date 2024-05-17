@@ -1,12 +1,9 @@
 package org.example;
 
 import com.google.protobuf.ByteString;
-import inc.*;
-import inc.FileDownloadRequest;
 import inc.FileDownloadResponse;
 import inc.FileUploadRequest;
 import inc.FileUploadResponse;
-import inc.Message;
 import inc.Rx3FileServiceGrpc;
 import io.reactivex.rxjava3.core.Flowable;
 
@@ -19,13 +16,13 @@ import static java.lang.System.out;
 
 public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
 
-    private Map<ZoneLimits, Map<String, String>> filesByLimits;
+    private Map<ZoneLimits,ArrayList<String>> filesByLimits;
 
     public Service(ArrayList<ZoneLimits> limits) {
         super();
         this.filesByLimits = new HashMap<>();
         for (ZoneLimits limit : limits) {
-            filesByLimits.put(limit, new HashMap<>());
+            filesByLimits.put(limit, new ArrayList<String>());
         }
     }
 
@@ -54,22 +51,15 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
         // Se encontrou os limites correspondentes
         if (zoneLimits != null) {
             // Obtém o mapa de arquivos para esses limites
-            Map<String, String> filesMap = filesByLimits.get(zoneLimits);
+            ArrayList<String> files = filesByLimits.get(zoneLimits);
 
             // Se o mapa de arquivos não for nulo
-            if (filesMap != null) {
-                // Converte o mapa de arquivos para uma lista de FileHash
-                ArrayList<FileHash> filesInLimits = new ArrayList<>();
-                for (Map.Entry<String, String> entry : filesMap.entrySet()) {
-                    filesInLimits.add(new FileHash(entry.getKey(), entry.getValue()));
-                }
-
-                // Ordena os arquivos com base no comprimento do nome do arquivo
-                filesInLimits.sort(Comparator.comparingInt(fh -> fh.getFileName().length()));
-
+            if (files != null) {
                 // Adiciona os nomes dos arquivos à lista de arquivos para transferência
-                for (FileHash fileHash : filesInLimits) {
-                    filesToTransfer.add(fileHash.getFileName());
+                for (String fileHash : files) {
+                    int val= fileHash.compareTo(hash);
+                    if (val<0)
+                        filesToTransfer.add(fileHash);
                 }
             }
         }
@@ -79,16 +69,16 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
 
     public Flowable<FileUploadResponse> upload(Flowable<FileUploadRequest> request) {
         return request.map(requestMessage -> {
-                    String campo1 = requestMessage.getFileName();
                     byte[] campo2 = requestMessage.getChunk().toByteArray();
                     String ssh_key = requestMessage.getSsaKey();
                     ZoneLimits zone= keyInDomain(ssh_key);
-                    //out.println("ola");
-                    //out.println(zone);
-                    if (!(filesByLimits.get(zone).containsKey(ssh_key))) {
-                        filesByLimits.get(zone).put(ssh_key, campo1);
+                    if (!filesByLimits.get(zone).contains(ssh_key)) {
+                    filesByLimits.get(zone).add(ssh_key);
+                        return guardar_file(ssh_key, campo2);
                     }
-                    return guardar_file(campo1, campo2);
+                    else {
+                        return 0;
+                    }
                 })
                 .map(n -> FileUploadResponse.newBuilder().setSize(2).build());
     }
