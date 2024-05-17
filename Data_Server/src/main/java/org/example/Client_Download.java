@@ -20,7 +20,7 @@ public class Client_Download {
         var stub = Rx3FileServiceGrpc.newRxStub(channel);
 
         FileDownloadRequest request = FileDownloadRequest.newBuilder()
-                .setFileName("senra_2.jpg")
+                .setSsaKey("senra_2.jpg")
                 .build();
 
         try (FileOutputStream fileOutputStream = new FileOutputStream("senra_2.jpg")) {

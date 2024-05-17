@@ -194,7 +194,7 @@ public class DataServer1 {
                 .map(response -> {
                     try {
                         if (response.getSeqNum()==1) {
-                            fileOutputStream[0] = new FileOutputStream(response.getFileName());
+                            fileOutputStream[0] = new FileOutputStream(response.getSsaKey());
                         }
                         // Escrever os bytes recebidos no arquivo
                         fileOutputStream[0].write(response.getChunk().toByteArray());

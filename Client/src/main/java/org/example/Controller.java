@@ -59,6 +59,14 @@ public class Controller {
         this.sistema.chat();
     }
 
+    public void downloadFile (String nomeFicheiro, String path) {
+        this.sistema.downloadFile(nomeFicheiro, path);
+    }
+
+    public void infoAlbum() {
+        this.sistema.infoAlbum();
+    }
+
 
 
 }

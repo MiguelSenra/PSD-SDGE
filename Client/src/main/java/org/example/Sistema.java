@@ -186,9 +186,9 @@ public class Sistema {
                         Map<String, Object> ficheiros = new HashMap<>();
                         OtpErlangMap erlangMap = (OtpErlangMap) thirdField;
                         for (OtpErlangObject key : erlangMap.keys()) {
-                            OtpErlangObject value = erlangMap.get(key);
-                            File_CRDT file = new File_CRDT(crdt_ids, value.toString());
-                            ficheiros.put(key.toString(), file);
+                            OtpErlangString value = (OtpErlangString) erlangMap.get(key);
+                            File_CRDT file = new File_CRDT(crdt_ids, value.stringValue());
+                            ficheiros.put(((OtpErlangString) key).stringValue(), file);
                         }
                         albumData.put("ficheiros", ficheiros);
                         ArrayList<Editor> editors = BeginEdition(nome);
@@ -352,10 +352,11 @@ public class Sistema {
         ArrayList<String> membros= (ArrayList<String>) album.get("membros");
         Map<String,String> ficheiros= (Map<String,String>) album.get("ficheiros");
         OtpErlangMap ficheiros_erl = new OtpErlangMap();
+        System.out.println("Ficheiros do album: "+ficheiros);
         for (String key : ficheiros.keySet()) {
             ficheiros_erl.put(new OtpErlangString(key), new OtpErlangString(ficheiros.get(key)));
         }
-
+        System.out.println("Ficheiros do album: "+ficheiros_erl);
         //System.out.println("Membros do album: "+membros);
         OtpErlangObject[] participantes = new OtpErlangObject[membros.size()];
         for (int i = 0; i < membros.size(); i++) {
@@ -454,6 +455,14 @@ public class Sistema {
 
     public void chat(){
         this.editing.chat();
+    }
+
+    public void downloadFile(String nomeFicheiro, String path) {
+        this.editing.downloadFile(nomeFicheiro, path);
+    }
+
+    public void infoAlbum() {
+        this.editing.infoAlbum();
     }
 
 }

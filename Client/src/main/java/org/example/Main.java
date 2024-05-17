@@ -23,6 +23,8 @@ public class Main {
                 "Adicionar Utilizador",
                 "Remover Utilizador",
                 "Classificar ficheiro",
+                "Download Ficheiro",
+                "Ver info Album",
                 "Chat"
         });
 
@@ -51,9 +53,23 @@ public class Main {
             controller.removeUser(nome);
         });
 
-        MenuEditing.setHandler(6, () -> {
+        MenuEditing.setHandler(8, () -> {
             controller.chat();
         });
+
+        MenuEditing.setHandler(6, () -> {
+            System.out.println("Nome do Ficheiro:");
+            String nomeFicheiro = scanner.nextLine();
+            System.out.println("Path do Ficheiro:");
+            String path = scanner.nextLine();
+            controller.downloadFile(nomeFicheiro, path);
+        });
+
+        MenuEditing.setHandler(7, () -> {
+            controller.infoAlbum();
+        });
+
+
 
 
         //Fazer o registo
@@ -91,9 +107,8 @@ public class Main {
                 MenuEditing.run();
                 controller.TerminateEdition();
             }
-
-
         });
+
 
         menuInicial.setPreCondition(1, () -> !controller.Precondition1());
         menuInicial.setPreCondition(2, () -> !controller.Precondition1());

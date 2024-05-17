@@ -89,8 +89,9 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
                             return Flowable.just(FileUploadResponse.newBuilder().setSize(-1).setMessage("No autorization").build());
                         }
                     }
+
                     out.println(requestMessage.toString());
-                    if (requestMessage.getSeqNum()!=1 || !filesByLimits.get(zone).contains(ssh_key)) {
+                    if ((!error[0] && requestMessage.getSeqNum()!=1) || !filesByLimits.get(zone).contains(ssh_key)) {
                         filesByLimits.get(zone).add(ssh_key);
                         int val=guardar_file(ssh_key, campo2);
                         return Flowable.just(FileUploadResponse.newBuilder().setSize(val).setMessage("Packet uploaded").build());
@@ -117,34 +118,38 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
     }
 
 
-    public Flowable<FileDownloadResponse> aux_download(String filename) {
+    public Flowable<FileDownloadResponse> aux_download(String hash) {
         //System.out.println("resposta ");
         FileInputStream fis;
         byte[] buffer=new byte[1024];
         try {
-            fis = new FileInputStream(filename);
+            fis = new FileInputStream(hash);
         }
         catch (Exception e) {
             return Flowable.empty();
         }
-        return Flowable.generate(emiter->{
-            int bytesRead;
-            try {
-                bytesRead = fis.read(buffer);
-                //System.out.println(buffer);
-            if ( bytesRead!=-1) {
-                FileDownloadResponse msg= FileDownloadResponse.newBuilder().setChunk(ByteString.copyFrom(buffer,0,bytesRead)).build();
-                emiter.onNext(msg);
-                emiter.onNext(msg);
-            }
-            else {
-                emiter.onComplete();
-            }
-            }
-            catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
-        });
+        ZoneLimits zone= keyInDomain(hash);
+        if (zone==null) {
+            return Flowable.just(FileDownloadResponse.newBuilder().setMessage("No autorization").build());
+        }
+        else {
+            return Flowable.generate(emiter -> {
+                int bytesRead;
+                try {
+                    bytesRead = fis.read(buffer);
+                    //System.out.println(buffer);
+                    if (bytesRead != -1) {
+                        FileDownloadResponse msg = FileDownloadResponse.newBuilder().setChunk(ByteString.copyFrom(buffer, 0, bytesRead)).build();
+                        emiter.onNext(msg);
+                        //emiter.onNext(msg);
+                    } else {
+                        emiter.onComplete();
+                    }
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                }
+            });
+        }
     }
 
     public Flowable<FileDownloadResponse> auxNewServer(List<String> filenames) {
@@ -159,7 +164,7 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
                         int bytesRead = fis.read(buffer);
                         if (bytesRead != -1) {
                             //out.println(idx[0]);
-                            FileDownloadResponse msg = FileDownloadResponse.newBuilder().setFileName(filename).setChunk(ByteString.copyFrom(buffer, 0, bytesRead)).setSeqNum(idx[0]).build();
+                            FileDownloadResponse msg = FileDownloadResponse.newBuilder().setSsaKey(filename).setChunk(ByteString.copyFrom(buffer, 0, bytesRead)).setSeqNum(idx[0]).build();
                             idx[0]++;
                             emitter.onNext(msg);
                         } else {
@@ -176,7 +181,7 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
     }
 
     public Flowable<FileDownloadResponse> download(Flowable<inc.FileDownloadRequest> request) {
-        return request.flatMap(res-> aux_download(res.getFileName()));
+        return request.flatMap(res-> aux_download(res.getSsaKey()));
     }
 
     public int guardar_file( String filename, byte[] data ) {
@@ -203,17 +208,15 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
 
     public Flowable<inc.RemoveFileResponse> removeFile(Flowable<inc.RemoveFileRequest> request) {
         return request.map(req->{
-            Path path = Paths.get("Data/" + req.getHash());
             try {
-
-                // Apagar o arquivo
-                Files.delete(path);
                 ZoneLimits zone= keyInDomain(req.getHash());
                 if (zone==null) {
                     return RemoveFileResponse.newBuilder().setMessage("No autorization").build();
                 }
                 else {
                     filesByLimits.get(zone).remove(req.getHash());
+                    Path path = Paths.get("Data/" + req.getHash());
+                    Files.delete(path);
                     return RemoveFileResponse.newBuilder().setMessage("File removed").build();
                 }
             } catch (IOException e) {

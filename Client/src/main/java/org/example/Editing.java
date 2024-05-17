@@ -1,19 +1,13 @@
 package org.example;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 import com.ericsson.otp.erlang.*;
 import com.google.common.hash.Hashing;
@@ -168,19 +162,6 @@ public class Editing {
         socket.send(data, 0);
     }
 
-
-    public Map<String,Object> startEdition() {
-        System.out.println(members);
-        for (int i = 0; i < members.size(); i++) {
-            if (members.get(i).getuser().equals(username)) {
-                sendMessage(new ExitMessage(new Editor(members.get(i))),true);
-                break;
-            }
-        }
-        this.socket.close();
-        this.context.close();
-        return this.albumCRDT.Album_Send();
-    }
     public Map<String,Object> TerminateEdition() {
         System.out.println(members);
         for (int i = 0; i < members.size(); i++) {
@@ -278,7 +259,7 @@ public class Editing {
                                 long portLong = ((OtpErlangLong) fields1[1]).longValue();
                                 int port=(int) portLong;
                                 String hash = ((OtpErlangString) fields1[2]).stringValue();
-                                System.out.println("AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"+element.toString());
+                                //System.out.println("AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"+element.toString());
                                 servers.add(new Zone(ip, port, hash));
                             }
                         }
@@ -301,7 +282,7 @@ public class Editing {
         }
     }
 
-    public void addFileDataServer(String hash, String filePath) {
+    public boolean addFileDataServer(String hash, String filePath) {
         byte[] buffer = new byte[BATCH_SIZE];
         final boolean[] flag={true};
         final boolean[] error={false};
@@ -342,7 +323,10 @@ public class Editing {
                                 error[0]=true;
                                 return "";
                             }
-                            return "File ack: "+response.getSize() +" bytes";
+                            else {
+                                System.out.println(response);
+                                return "File ack: " + response.getSize() + " bytes";
+                            }
                         })
                         .blockingSubscribe(
                                 System.out::println,
@@ -357,6 +341,7 @@ public class Editing {
                 System.err.println("Erro ao abrir arquivo: " + e.getMessage());
             }
         }
+        return error[0];
     }
 
     public Zone getDataServer(String hash) {
@@ -379,9 +364,11 @@ public class Editing {
             String hash = null;
             try {
                 hash = calculateSHA256(filePath);
-                addFileDataServer(hash, filePath);
-                State_CRDT_Message msg = this.albumCRDT.addFile(nomeFile, hash);
-                this.sendMessage(msg, false);
+                boolean op_error=addFileDataServer(hash, filePath);
+                if (!op_error) {
+                    State_CRDT_Message msg = this.albumCRDT.addFile(nomeFile, hash);
+                    this.sendMessage(msg, false);
+                }
             } catch (IOException | NoSuchAlgorithmException e) {
                 e.printStackTrace();
                 System.out.println("Erro ao calcular o hash do ficheiro.");
@@ -420,7 +407,9 @@ public class Editing {
                         return "O ficheiro foi removido com sucesso";
                     }
                 })
-                .blockingSubscribe(System.out::println);
+                .blockingSubscribe(System.out::println,
+                        error1 -> System.err.println("Erro ao remover o ficheiro: " + error1.getMessage())
+                );
         }
     }
 
@@ -434,12 +423,95 @@ public class Editing {
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Erro ao remover o ficheiro");
-                return;
             }
         }
         else {
             System.out.println("O ficheiro " + nomeFile + " não existe.");
         }
+    }
+
+    public void downloadFileDataServer(String hash, String filePath) {
+        final boolean[] flag = {true};
+        while (flag[0]) {
+            flag[0]= false;
+            Zone dataServer = getDataServer(hash);
+            var channel = ManagedChannelBuilder.forAddress(dataServer.getIp(), dataServer.getPort())
+                    .usePlaintext()
+                    .build();
+            var stub = Rx3FileServiceGrpc.newRxStub(channel);
+
+            FileDownloadRequest request = FileDownloadRequest.newBuilder()
+                    .setSsaKey(hash)
+                    .build();
+
+            try (FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
+                // Submeter a solicitação de download e processar as respostas
+                stub.download(Flowable.just(request))
+                    .map(response -> {
+                        if (response.getMessage().equals("No autorization")) {
+                            flag[0] = true;
+                            getDataServers();
+                            return Flowable.empty() ;
+                        }
+                        else {
+                            try {
+                                // Escrever os bytes recebidos no arquivo
+                                fileOutputStream.write(response.getChunk().toByteArray());
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            return Flowable.empty();
+                        }
+                    })
+                    .blockingSubscribe(System.out::println);
+                System.out.println("Ficheiro descarregado com sucesso.");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void downloadFile(String nomeFile, String filePath) {
+        if (this.albumCRDT.containsFile(nomeFile))  {
+            String hash = this.albumCRDT.getHashFile(nomeFile);
+            try {
+                downloadFileDataServer(hash,filePath);
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Erro ao remover o ficheiro");
+            }
+        }
+        else {
+            System.out.println("O ficheiro " + nomeFile + " não existe.");
+        }
+    }
+
+    public void infoAlbum() {
+        Map<String,Object> album = this.albumCRDT.Album_Send();
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\n");
+        for (Map.Entry<String, Object> entry : album.entrySet()) {
+            sb.append("  ").append(entry.getKey()).append(": ");
+            Object value = entry.getValue();
+            if (value instanceof Map) {
+                sb.append("{\n");
+                for (Map.Entry<?, ?> subEntry : ((Map<?, ?>) value).entrySet()) {
+                    sb.append("    ").append(subEntry.getKey()).append(": ").append(subEntry.getValue()).append(",\n");
+                }
+                sb.append("  }");
+            } else if (value instanceof Collection) {
+                sb.append("[\n");
+                for (Object item : (Collection<?>) value) {
+                    sb.append("    ").append(item).append(",\n");
+                }
+                sb.append("  ]");
+            } else {
+                sb.append(value);
+            }
+            sb.append(",\n");
+        }
+        sb.append("}");
+        System.out.println(sb.toString());
     }
 
 
