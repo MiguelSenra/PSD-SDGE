@@ -19,8 +19,9 @@ import java.util.List;
 import java.util.Random;
 
 import static com.google.common.base.Strings.repeat;
-import static org.example.Client_Upload.bytesToTuple;
-import static org.example.Client_Upload.tupleToBytes;
+import static org.example.ErlangSerialization.bytesToTuple;
+import static org.example.ErlangSerialization.tupleToBytes;
+
 
 public class DataServer1 {
     private SocketChannel ss;

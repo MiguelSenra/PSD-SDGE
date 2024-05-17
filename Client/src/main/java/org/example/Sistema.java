@@ -274,7 +274,6 @@ public class Sistema {
                 ByteBuffer bb = ByteBuffer.wrap(tupleToBytes(message));
                 ss1.write(bb);
 
-                System.out.println("OLAAAAAAAAAAAAA");
                 bb.clear();
                 int bytesRead;
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -289,11 +288,8 @@ public class Sistema {
 
                 byte[] receivedBytes = baos.toByteArray();
 
-                System.out.println("OLAAAAAAAAAAAAA" + new String(receivedBytes));
                 OtpErlangTuple response = bytesToTuple(receivedBytes);
-                System.out.println("OLAAAAAAAAAAAAA");
                 OtpErlangObject[] fields = response.elements();
-                System.out.println("OLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
                 System.out.println(response);
                 OtpErlangObject firstField = fields[0];
                 if (firstField instanceof OtpErlangAtom) {

@@ -8,7 +8,6 @@ message FileUploadRequest {
 }
 message FileUploadResponse {
   uint32 size = 2;
-  string Message = 3;
 }
 
 message FileDownloadRequest {

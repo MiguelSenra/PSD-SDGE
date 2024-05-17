@@ -42,6 +42,7 @@ process_tcp_messages(Sock) ->
                     Res=login_manager:create_account(Credentials),
                     io:format("Estado do registo:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
+                    gen_tcp:close(Sock),
                     %io:format("resposta~n~p", [Res]),
                     process_tcp_messages(Sock);
                 {login, Credentials} ->
@@ -49,16 +50,19 @@ process_tcp_messages(Sock) ->
                     Res=login_manager:login(Credentials),
                     io:format("Estado do login:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
+                    gen_tcp:close(Sock),
                     process_tcp_messages(Sock);
                 {create_Album,Values} ->
                     Res=albuns:create_Album(Values),
                     io:format("Estado do album:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
+                    gen_tcp:close(Sock),
                     process_tcp_messages(Sock);
                 {list_Album,Values} ->
                     Res=albuns:list_Album(Values),
                     io:format("Estado do album:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
+                    gen_tcp:close(Sock),
                     process_tcp_messages(Sock);
                 {get_Album,Values} ->
                     io:format("get do album:~n", []),
@@ -106,4 +110,3 @@ process_tcp_messages(Sock) ->
         %  Login_Manager ! {leave, self()}
         Outro->  io:format("outros dados~n~p", [Outro])
     end.
-

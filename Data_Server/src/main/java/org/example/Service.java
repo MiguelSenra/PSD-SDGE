@@ -68,33 +68,35 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
     }
 
     public Flowable<FileUploadResponse> upload(Flowable<FileUploadRequest> request) {
+
         return request.map(requestMessage -> {
                     byte[] campo2 = requestMessage.getChunk().toByteArray();
                     String ssh_key = requestMessage.getSsaKey();
                     ZoneLimits zone= keyInDomain(ssh_key);
+                    if (zone==null) return FileUploadResponse.newBuilder().setSize(-1).setMessage("No autorization").build();
                     if (!filesByLimits.get(zone).contains(ssh_key)) {
-                    filesByLimits.get(zone).add(ssh_key);
-                        return guardar_file(ssh_key, campo2);
+                        filesByLimits.get(zone).add(ssh_key);
+                        int val=  guardar_file(ssh_key, campo2);
+                        return FileUploadResponse.newBuilder().setSize(val).build();
                     }
                     else {
-                        return 0;
+                        return FileUploadResponse.newBuilder().setSize(-1).setMessage("File exists").build();
                     }
-                })
-                .map(n -> FileUploadResponse.newBuilder().setSize(2).build());
+                });
     }
 
     public Flowable<FileDownloadResponse> transferDataNewServer(Flowable<inc.TransferDataNewServerRequest> request) {
-        out.println("TransferDataNewServerRequest");
+        //out.println("TransferDataNewServerRequest");
         return request.flatMap(res-> {
             ArrayList<String> ar= ListFilesToTransferNewServer(res.getSsaKey());
             newLimits(res.getSsaKey());
             out.println(ar.toString());
-            return aux1(ar);
+            return auxNewServer(ar);
             });
     }
 
 
-    public Flowable<FileDownloadResponse> aux(String filename) {
+    public Flowable<FileDownloadResponse> aux_download(String filename) {
         //System.out.println("resposta ");
         FileInputStream fis;
         byte[] buffer=new byte[1024];
@@ -108,9 +110,10 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
             int bytesRead;
             try {
                 bytesRead = fis.read(buffer);
-                System.out.println(buffer);
+                //System.out.println(buffer);
             if ( bytesRead!=-1) {
                 FileDownloadResponse msg= FileDownloadResponse.newBuilder().setChunk(ByteString.copyFrom(buffer,0,bytesRead)).build();
+                emiter.onNext(msg);
                 emiter.onNext(msg);
             }
             else {
@@ -123,7 +126,7 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
         });
     }
 
-    public Flowable<FileDownloadResponse> aux1(List<String> filenames) {
+    public Flowable<FileDownloadResponse> auxNewServer(List<String> filenames) {
         return Flowable.fromIterable(filenames)
                 .flatMap(filename -> {
                     out.println(filename);
@@ -152,7 +155,7 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
     }
 
     public Flowable<FileDownloadResponse> download(Flowable<inc.FileDownloadRequest> request) {
-        return request.flatMap(res-> aux(res.getFileName()));
+        return request.flatMap(res-> aux_download(res.getFileName()));
     }
 
     public int guardar_file( String filename, byte[] data ) {
