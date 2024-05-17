@@ -1,18 +1,26 @@
 package org.example;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+import com.ericsson.otp.erlang.*;
 import com.google.common.hash.Hashing;
 import com.google.protobuf.ByteString;
+import inc.FileDownloadRequest;
 import inc.FileUploadRequest;
+import inc.RemoveFileRequest;
 import inc.Rx3FileServiceGrpc;
 import io.grpc.ManagedChannelBuilder;
 import io.reactivex.rxjava3.core.Flowable;
@@ -20,11 +28,15 @@ import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import org.zeromq.ZContext;
 
+import javax.sound.midi.SysexMessage;
+
 public class Editing {
 
     //private Scanner scanner;
 
     private ArrayList<Editor> members;
+
+    private ArrayList<Zone> dataServers;
 
     private static final int BATCH_SIZE = 1024;
 
@@ -51,6 +63,7 @@ public class Editing {
             this.username=username;
             this.members=members;
             this.chatClock = new ChatClock(username);
+            getDataServers();
 
             Thread replyThread = new Thread(() -> {
                 try (ZContext context1 = new ZContext()) {
@@ -218,39 +231,142 @@ public class Editing {
         return hexString.toString();
     }
 
-    public findDataServer()
+    public void getDataServers() {
+        try {
+            // Conecta ao servidor
+            try (SocketChannel ss1 = SocketChannel.open(new InetSocketAddress((int) 12345))) {
+                try {
+                    // Monta a mensagem a ser enviada para o servidor
+                    OtpErlangObject[] tuple = new OtpErlangObject[]{
+                            new OtpErlangAtom("get_servers"),
+                    };
+                    OtpErlangTuple message = new OtpErlangTuple(tuple);
+                    ByteBuffer bb = ByteBuffer.wrap(Sistema.tupleToBytes(message));
+
+                    // Envia a mensagem para o servidor
+                    ss1.write(bb);
+                    bb.clear();
+
+                    int bytesRead;
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    while ((bytesRead = ss1.read(bb)) != -1) {
+                        bb.flip();
+                        byte[] receivedBytes = new byte[bb.remaining()];
+                        bb.get(receivedBytes);
+                        baos.write(receivedBytes);
+                        bb.clear();
+                    }
+
+                    // Processa a resposta do servidor
+                    byte[] receivedBytes = baos.toByteArray();
+                    // Concatenar os bytes recebidos em um único array
+                    OtpErlangTuple response = Sistema.bytesToTuple(receivedBytes);
+                    OtpErlangObject[] fields = response.elements();
+
+                    OtpErlangObject firstField = fields[0];
+                    if (firstField instanceof OtpErlangList) {
+
+                        // Converter a lista em um ArrayList
+                        OtpErlangList lista = ((OtpErlangList) firstField);
+                        ArrayList<Zone> servers = new ArrayList<>();
+                        // Iterar sobre os elementos da lista Erlang
+                        for (OtpErlangObject element : lista.elements()) {
+                            if (element instanceof OtpErlangTuple) {
+                                OtpErlangTuple new_tuple = (OtpErlangTuple) element;
+                                OtpErlangObject[] fields1 = new_tuple.elements();
+                                String ip = ((OtpErlangString) fields1[0]).stringValue();
+                                long portLong = ((OtpErlangLong) fields1[1]).longValue();
+                                int port=(int) portLong;
+                                String hash = ((OtpErlangString) fields1[2]).stringValue();
+                                System.out.println("AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"+element.toString());
+                                servers.add(new Zone(ip, port, hash));
+                            }
+                        }
+                        this.dataServers=servers;
+                    }
+                    else {
+                        throw new Exception("Não foi possível obter uma resposta");
+                    }
+                } catch (Exception e) {
+                    // Trata exceções durante o processamento da mensagem
+                    System.out.println("Erro durante o processamento da mensagem: " + e.getMessage());
+                }
+            } catch (IOException e) {
+                // Trata exceções de conexão com o servidor
+                System.err.println("Erro ao conectar ao servidor: " + e.getMessage());
+            }
+        } catch (Exception e) {
+            // Trata exceções gerais
+            System.err.println("Erro geral: " + e.getMessage());
+        }
+    }
 
     public void addFileDataServer(String hash, String filePath) {
         byte[] buffer = new byte[BATCH_SIZE];
-        var channel = ManagedChannelBuilder.forAddress("localhost", 12346)
-                .usePlaintext()
-                .build();
-        var stub = Rx3FileServiceGrpc.newRxStub(channel);
+        final boolean[] flag={true};
+        final boolean[] error={false};
+        while(flag[0]) {
+            flag[0]=false;
+            final int[] seqNum = {1};
+            Zone dataServer = getDataServer(hash);
+            var channel = ManagedChannelBuilder.forAddress(dataServer.getIp(), dataServer.getPort())
+                    .usePlaintext()
+                    .build();
+            var stub = Rx3FileServiceGrpc.newRxStub(channel);
 
 
-        try (FileInputStream fileInputStream = new FileInputStream(filePath)) {
-            stub.upload(Flowable.generate(emitter -> {
-                        int numBytesRead = fileInputStream.read(buffer);
-                        if (numBytesRead == -1) {
-                            emitter.onComplete();
-                        } else {
-                            FileUploadRequest request = FileUploadRequest.newBuilder()
-                                    .setChunk(ByteString.copyFrom(buffer))
-                                    .setSsaKey(Hashing.sha256().hashString(hash, java.nio.charset.StandardCharsets.UTF_8).toString())
-                                    .build();
-                            emitter.onNext(request);
-                        }
-                    })).map(n -> "Result: " + n)
-                    .blockingSubscribe(
-                            // Lambda para processar resultados
-                            System.out::println,
-                            // Lambda para tratar erros
-                            error -> System.err.println("Erro ao fazer upload do arquivo: " + error.getMessage())
-                    );
+            try (FileInputStream fileInputStream = new FileInputStream(filePath)) {
+                stub.upload(Flowable.generate(emitter -> {
+                            int numBytesRead = fileInputStream.read(buffer);
+                            if (numBytesRead == -1) {
+                                emitter.onComplete();
+                            } else {
+                                FileUploadRequest request = FileUploadRequest.newBuilder()
+                                        .setSeqNum(seqNum[0])
+                                        .setChunk(ByteString.copyFrom(buffer))
+                                        .setSsaKey(Hashing.sha256().hashString(hash, java.nio.charset.StandardCharsets.UTF_8).toString())
+                                        .build();
+                                seqNum[0]++;
+                                emitter.onNext(request);
+                            }
+                        })).map(response -> {
+                            if (response.getMessage().equals("No autorization")) {
+                                flag[0]=true;
+                                error[0]=true;
+                                getDataServers();
+                                return "";
+                            }
+                            else if (response.getMessage().equals("File exists")) {
 
-        } catch (IOException e) {
-            System.err.println("Erro ao abrir arquivo: " + e.getMessage());
+                                System.out.println("O ficheiro já existe no servidor de dados.");
+                                error[0]=true;
+                                return "";
+                            }
+                            return "File ack: "+response.getSize() +" bytes";
+                        })
+                        .blockingSubscribe(
+                                System.out::println,
+                                error1 -> System.err.println("Erro ao fazer upload do arquivo: " + error1.getMessage())
+                        );
+
+                if (!error[0]) {
+                    System.out.println("Ficheiro guardado com sucesso.");
+                }
+
+            } catch (IOException e) {
+                System.err.println("Erro ao abrir arquivo: " + e.getMessage());
+            }
         }
+    }
+
+    public Zone getDataServer(String hash) {
+            for (Zone z : this.dataServers) {
+                int val = z.getHash().compareTo(hash);
+                if (val<0) {
+                    return z;
+                }
+            }
+            return this.dataServers.get(0);
     }
 
     public static boolean fileExists(String filePath) {
@@ -271,14 +387,59 @@ public class Editing {
                 System.out.println("Erro ao calcular o hash do ficheiro.");
                 return;
             }
+            catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
         } else {
             System.out.println("O arquivo " + filePath + " não existe.");
         }
     }
 
+    public void  removeFileDataServer(String hash) {
+        final boolean[] flag = {true};
+        while (flag[0]) {
+            flag[0] = false;
+            Zone dataServer = getDataServer(hash);
+            var channel = ManagedChannelBuilder.forAddress(dataServer.getIp(), dataServer.getPort())
+                    .usePlaintext()
+                    .build();
+            var stub = Rx3FileServiceGrpc.newRxStub(channel);
+
+            RemoveFileRequest request = RemoveFileRequest.newBuilder()
+                .setHash(hash)
+                .build();
+
+            stub.removeFile(Flowable.just(request))
+                .map(response -> {
+                    if (response.getMessage().equals("No autorization")) {
+                        getDataServers();
+                        flag[0] = true;
+                        return "";
+                    }
+                    else{
+                        return "O ficheiro foi removido com sucesso";
+                    }
+                })
+                .blockingSubscribe(System.out::println);
+        }
+    }
+
     public void removeFile(String nomeFile) {
-        State_CRDT_Message msg= this.albumCRDT.removeFile(nomeFile);
-        this.sendMessage(msg,false);
+        if (this.albumCRDT.containsFile(nomeFile))  {
+            String hash = this.albumCRDT.getHashFile(nomeFile);
+            try {
+                removeFileDataServer(hash);
+                State_CRDT_Message msg= this.albumCRDT.removeFile(nomeFile);
+                this.sendMessage(msg,false);
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Erro ao remover o ficheiro");
+                return;
+            }
+        }
+        else {
+            System.out.println("O ficheiro " + nomeFile + " não existe.");
+        }
     }
 
 

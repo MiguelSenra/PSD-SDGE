@@ -1,17 +1,24 @@
 package org.example;
 
 import com.google.protobuf.ByteString;
+import inc.*;
 import inc.FileDownloadResponse;
 import inc.FileUploadRequest;
 import inc.FileUploadResponse;
+import inc.RemoveFileResponse;
 import inc.Rx3FileServiceGrpc;
 import io.reactivex.rxjava3.core.Flowable;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static java.lang.System.out;
+
+
 
 
 public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
@@ -68,19 +75,33 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
     }
 
     public Flowable<FileUploadResponse> upload(Flowable<FileUploadRequest> request) {
-
-        return request.map(requestMessage -> {
+        final boolean[] error = {false};
+        return request.flatMap(requestMessage -> {
                     byte[] campo2 = requestMessage.getChunk().toByteArray();
                     String ssh_key = requestMessage.getSsaKey();
                     ZoneLimits zone= keyInDomain(ssh_key);
-                    if (zone==null) return FileUploadResponse.newBuilder().setSize(-1).setMessage("No autorization").build();
-                    if (!filesByLimits.get(zone).contains(ssh_key)) {
+
+                    if (zone==null) {
+                        if (error[0])
+                            return Flowable.empty();
+                        else {
+                            error[0] = true;
+                            return Flowable.just(FileUploadResponse.newBuilder().setSize(-1).setMessage("No autorization").build());
+                        }
+                    }
+                    out.println(requestMessage.toString());
+                    if (requestMessage.getSeqNum()!=1 || !filesByLimits.get(zone).contains(ssh_key)) {
                         filesByLimits.get(zone).add(ssh_key);
-                        int val=  guardar_file(ssh_key, campo2);
-                        return FileUploadResponse.newBuilder().setSize(val).build();
+                        int val=guardar_file(ssh_key, campo2);
+                        return Flowable.just(FileUploadResponse.newBuilder().setSize(val).setMessage("Packet uploaded").build());
                     }
                     else {
-                        return FileUploadResponse.newBuilder().setSize(-1).setMessage("File exists").build();
+                        if (error[0])
+                            return Flowable.empty();
+                        else {
+                            error[0] = true;
+                            return Flowable.just(FileUploadResponse.newBuilder().setSize(-1).setMessage("File exists").build());
+                        }
                     }
                 });
     }
@@ -90,7 +111,7 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
         return request.flatMap(res-> {
             ArrayList<String> ar= ListFilesToTransferNewServer(res.getSsaKey());
             newLimits(res.getSsaKey());
-            out.println(ar.toString());
+            //out.println(ar.toString());
             return auxNewServer(ar);
             });
     }
@@ -128,30 +149,30 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
 
     public Flowable<FileDownloadResponse> auxNewServer(List<String> filenames) {
         return Flowable.fromIterable(filenames)
-                .flatMap(filename -> {
-                    out.println(filename);
-                    final int[] idx = {1};
-                    try {
-                        FileInputStream fis = new FileInputStream(filename);
-                        return Flowable.generate(emitter -> {
-                            byte[] buffer = new byte[1024];
-                            int bytesRead = fis.read(buffer);
-                            if (bytesRead != -1) {
-                                //out.println(idx[0]);
-                                FileDownloadResponse msg = FileDownloadResponse.newBuilder().setFileName(filename).setChunk(ByteString.copyFrom(buffer, 0, bytesRead)).setSeqNum(idx[0]).build();
-                                idx[0]++;
-                                emitter.onNext(msg);
-                            } else {
-                                out.println("completei");
-                                emitter.onComplete();
-                                fis.close();
-                            }
-                        });
-                    } catch (Exception e) {
-                        System.out.println("Error reading file: " + filename + ": " + e.getMessage());
-                        return Flowable.empty();
-                    }
-                });
+            .flatMap(filename -> {
+                out.println(filename);
+                final int[] idx = {1};
+                try {
+                    FileInputStream fis = new FileInputStream(filename);
+                    return Flowable.generate(emitter -> {
+                        byte[] buffer = new byte[1024];
+                        int bytesRead = fis.read(buffer);
+                        if (bytesRead != -1) {
+                            //out.println(idx[0]);
+                            FileDownloadResponse msg = FileDownloadResponse.newBuilder().setFileName(filename).setChunk(ByteString.copyFrom(buffer, 0, bytesRead)).setSeqNum(idx[0]).build();
+                            idx[0]++;
+                            emitter.onNext(msg);
+                        } else {
+                            out.println("completei");
+                            emitter.onComplete();
+                            fis.close();
+                        }
+                    });
+                } catch (Exception e) {
+                    System.out.println("Error reading file: " + filename + ": " + e.getMessage());
+                    return Flowable.empty();
+                }
+            });
     }
 
     public Flowable<FileDownloadResponse> download(Flowable<inc.FileDownloadRequest> request) {
@@ -171,13 +192,33 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
             // Escreve bytes no arquivo
             try (FileOutputStream fos = new FileOutputStream(file, true)) {
                 fos.write(data);
-                //out.println("Dados adicionados com sucesso ao arquivo.");
             } catch (IOException e) {
                 System.err.println("Erro ao escrever no arquivo: " + e.getMessage());
             }
         } catch (IOException e) {
             System.err.println("Erro ao criar o arquivo: " + e.getMessage());
         }
-        return 1;
+        return (int) file.length();
+    }
+
+    public Flowable<inc.RemoveFileResponse> removeFile(Flowable<inc.RemoveFileRequest> request) {
+        return request.map(req->{
+            Path path = Paths.get("Data/" + req.getHash());
+            try {
+
+                // Apagar o arquivo
+                Files.delete(path);
+                ZoneLimits zone= keyInDomain(req.getHash());
+                if (zone==null) {
+                    return RemoveFileResponse.newBuilder().setMessage("No autorization").build();
+                }
+                else {
+                    filesByLimits.get(zone).remove(req.getHash());
+                    return RemoveFileResponse.newBuilder().setMessage("File removed").build();
+                }
+            } catch (IOException e) {
+                return RemoveFileResponse.newBuilder().setMessage("Não foi possível apagar o ficheiro").build();
+            }
+        });
     }
 }

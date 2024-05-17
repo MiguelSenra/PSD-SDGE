@@ -9,7 +9,7 @@ public class File_CRDT implements Serializable {
 
     File_CRDT(Map<String, Integer> vv, String hash) {
         this.vv = vv;
-        this.hash = hash;
+        this.hash = hash;2
     }
 
     public Map<String, Integer> getVv() {

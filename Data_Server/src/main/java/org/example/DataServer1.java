@@ -27,12 +27,12 @@ public class DataServer1 {
     private SocketChannel ss;
 
     private static final String ip = "localhost";
-    private static final int portNumber = 12347;
+    private static final int portNumber = 12350;
 
     private final int Nr_keys=3;
 
     private ArrayList<ZoneLimits> limits;
-    private List<ZoneLimits> zoneLimits;
+
     public static void main(String[] args) throws Exception {
         DataServer1 server = new DataServer1();
         ArrayList<Zone> servers=server.OpenSession();

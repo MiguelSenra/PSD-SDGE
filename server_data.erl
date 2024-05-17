@@ -16,7 +16,6 @@ new_server(Lista_chaves) ->
 get_servers() ->
     rpc({get_servers}).
 
-
 stop_serverData() -> rpc({stop}).
 % processo "servidor" 
 

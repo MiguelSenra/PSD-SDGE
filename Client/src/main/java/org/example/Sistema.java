@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import com.ericsson.otp.erlang.*;
@@ -16,7 +17,7 @@ public class Sistema {
     private String username;
 
     private long SC_portNumber=12345;
-    
+
     private long clientPort=12347;
 
     private Boolean login=false;
@@ -27,33 +28,36 @@ public class Sistema {
         return this.login;
     }
 
-    public Sistema(int SC_portNumber) {
-        try {
-            this.ss = SocketChannel.open(new InetSocketAddress(SC_portNumber));
-        }
-        catch (IOException e) {
-            System.err.println("Erro ao conectar ao servidor: " + e.getMessage());
-        }
-    }
 
     private String autentication_handler(String atom, String username, String password) {
         try {
-            OtpErlangObject[] tuple = new OtpErlangObject[]{
-                    new OtpErlangAtom(atom),
-                    new OtpErlangTuple(new OtpErlangObject[]{
-                            new OtpErlangString(username),
-                            new OtpErlangString(password),
-                    })
-            };
-            OtpErlangTuple message = new OtpErlangTuple(tuple);
-            ByteBuffer bb = ByteBuffer.wrap(tupleToBytes(message));
-            ss.write(bb);
+            this.ss = SocketChannel.open(new InetSocketAddress((int)SC_portNumber));
+            try {
+                OtpErlangObject[] tuple = new OtpErlangObject[]{
+                        new OtpErlangAtom(atom),
+                        new OtpErlangTuple(new OtpErlangObject[]{
+                                new OtpErlangString(username),
+                                new OtpErlangString(password),
+                        })
+                };
+                OtpErlangTuple message = new OtpErlangTuple(tuple);
+                ByteBuffer bb = ByteBuffer.wrap(tupleToBytes(message));
+                ss.write(bb);
 
-            bb.clear();
-            while (ss.read(bb) > 0) {
-                bb.flip();
-                byte[] receivedBytes = new byte[bb.remaining()];
-                bb.get(receivedBytes);
+                bb.clear();
+                int bytesRead;
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                while ((bytesRead = ss.read(bb)) != -1) {
+                    System.out.println("Lidos " + bytesRead + " bytes do socket.");
+                    bb.flip();
+                    byte[] receivedBytes = new byte[bb.remaining()];
+                    bb.get(receivedBytes);
+                    baos.write(receivedBytes);
+                    bb.clear();
+                }
+
+                // Processa a resposta do servidor
+                byte[] receivedBytes = baos.toByteArray();
                 OtpErlangTuple response = bytesToTuple(receivedBytes);
                 OtpErlangObject[] fields = response.elements();
 
@@ -62,11 +66,14 @@ public class Sistema {
                     // Converter o átomo em uma string
                     return  ((OtpErlangAtom) firstField).atomValue();
                 }
-            }
-            throw new Exception("Não foi possível obter uma resposta");
+                throw new Exception("Não foi possível obter uma resposta");
 
-        }catch(Exception e){
-            System.out.println("Não consegui escrever no socket" + e.toString());
+            }catch(Exception e){
+                System.out.println("Não consegui escrever no socket" + e.toString());
+            }
+        }
+        catch (IOException e) {
+            System.err.println("Erro ao conectar ao servidor: " + e.getMessage());
         }
         return "";
     }
@@ -210,21 +217,32 @@ public class Sistema {
 
     private ArrayList<String> list_handler(String atom) {
         try {
-            OtpErlangObject[] tuple = new OtpErlangObject[]{
-                    new OtpErlangAtom(atom),
-                    new OtpErlangTuple(new OtpErlangObject[]{
-                            new OtpErlangString(this.username),
-                    })
-            };
-            OtpErlangTuple message = new OtpErlangTuple(tuple);
-            ByteBuffer bb = ByteBuffer.wrap(tupleToBytes(message));
-            ss.write(bb);
-            bb.clear();
+            this.ss = SocketChannel.open(new InetSocketAddress((int)SC_portNumber));
+            try {
+                OtpErlangObject[] tuple = new OtpErlangObject[]{
+                        new OtpErlangAtom(atom),
+                        new OtpErlangTuple(new OtpErlangObject[]{
+                                new OtpErlangString(this.username),
+                        })
+                };
+                OtpErlangTuple message = new OtpErlangTuple(tuple);
+                ByteBuffer bb = ByteBuffer.wrap(tupleToBytes(message));
+                ss.write(bb);
+                bb.clear();
 
-            while (ss.read(bb) > 0) {
-                bb.flip();
-                byte[] receivedBytes = new byte[bb.remaining()];
-                bb.get(receivedBytes);
+                int bytesRead;
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                while ((bytesRead = ss.read(bb)) != -1) {
+                    System.out.println("Lidos " + bytesRead + " bytes do socket.");
+                    bb.flip();
+                    byte[] receivedBytes = new byte[bb.remaining()];
+                    bb.get(receivedBytes);
+                    baos.write(receivedBytes);
+                    bb.clear();
+                }
+
+                // Processa a resposta do servidor
+                byte[] receivedBytes = baos.toByteArray();
                 OtpErlangTuple response = bytesToTuple(receivedBytes);
                 OtpErlangObject[] fields = response.elements();
 
@@ -242,11 +260,14 @@ public class Sistema {
                     }
                     return arrayList;
                 }
-            }
-            //throw new Exception("Não foi possível obter uma reposta");
+                //throw new Exception("Não foi possível obter uma reposta");
 
-        }catch(Exception e){
-            System.out.println("Não consegui escrever no socket" + e.toString());
+            }catch(Exception e){
+                System.out.println("Não consegui escrever no socket" + e.toString());
+            }
+        }
+        catch (IOException e) {
+            System.err.println("Erro ao conectar ao servidor: " + e.getMessage());
         }
         return new ArrayList<>();
     }
@@ -329,11 +350,10 @@ public class Sistema {
         Map<String,Object> album=this.editing.TerminateEdition();
         //System.out.println("Album terminado com sucesso!");
         ArrayList<String> membros= (ArrayList<String>) album.get("membros");
-        Map<String,File_CRDT> ficheiros= (Map<String,File_CRDT>) album.get("ficheiros");
-
+        Map<String,String> ficheiros= (Map<String,String>) album.get("ficheiros");
         OtpErlangMap ficheiros_erl = new OtpErlangMap();
         for (String key : ficheiros.keySet()) {
-            ficheiros_erl.put(new OtpErlangString(key), new OtpErlangString(ficheiros.get(key).getHash()));
+            ficheiros_erl.put(new OtpErlangString(key), new OtpErlangString(ficheiros.get(key)));
         }
 
         //System.out.println("Membros do album: "+membros);
@@ -351,7 +371,7 @@ public class Sistema {
                                 new OtpErlangString(this.username),
                                 ficheiros_erl,
                                 new OtpErlangList(participantes)
-                                }),
+                        }),
                 };
                 OtpErlangTuple message = new OtpErlangTuple(tuple);
                 System.out.println(message);
@@ -371,11 +391,8 @@ public class Sistema {
 
                 byte[] receivedBytes = baos.toByteArray();
 
-                System.out.println("OLAAAAAAAAAAAAA" + new String(receivedBytes));
                 OtpErlangTuple response = bytesToTuple(receivedBytes);
-                System.out.println("OLAAAAAAAAAAAAA");
                 OtpErlangObject[] fields = response.elements();
-                System.out.println("OLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
                 System.out.println(response);
                 OtpErlangObject firstField = fields[0];
                 if (firstField instanceof OtpErlangAtom) {
@@ -409,9 +426,9 @@ public class Sistema {
 
     public static OtpErlangTuple bytesToTuple(byte[] bytes) throws IOException, OtpErlangDecodeException {
         // Descodificar os bytes em um objeto OtpErlangTuple
-        System.out.println("hey"+new String(bytes));
+        System.out.println(new String(bytes, StandardCharsets.UTF_8));
         OtpErlangObject object = new OtpInputStream(bytes).read_any();
-        System.out.println("ola"+object);
+        //System.out.println(object);
         if (!(object instanceof OtpErlangTuple)) {
             throw new IllegalArgumentException("Objeto não é um OtpErlangTuple: " + object);
         }

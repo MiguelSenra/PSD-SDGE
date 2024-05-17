@@ -5,9 +5,12 @@ option java_multiple_files = true;
 message FileUploadRequest {
   string ssa_key = 1;
   bytes chunk = 2;
+  uint32 seq_num = 3;
 }
+
 message FileUploadResponse {
   uint32 size = 2;
+  string Message= 3;
 }
 
 message FileDownloadRequest {
@@ -22,8 +25,17 @@ message TransferDataNewServerRequest{
   string ssa_key = 1;
 }
 
+message RemoveFileRequest{
+  string hash = 1;
+}
+
+message RemoveFileResponse{
+  string Message = 2;
+}
+
 service FileService {
   rpc Upload(stream FileUploadRequest) returns(stream FileUploadResponse);
   rpc Download(stream FileDownloadRequest) returns(stream FileDownloadResponse);
   rpc TransferDataNewServer(stream TransferDataNewServerRequest) returns (stream FileDownloadResponse);
+  rpc RemoveFile(stream RemoveFileRequest) returns (stream RemoveFileResponse);
 }

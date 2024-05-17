@@ -33,12 +33,14 @@ public class AlbumCRDT {
     }
 
     public  State_CRDT_Message addFile(String nameFile, String hash) {
+        System.out.println("nameFile: "+nameFile+" hash: "+hash);
         Map<String,File_CRDT> ficheiros=(Map<String,File_CRDT>) this.album.get("ficheiros");
         this.incClock();
         Map<String,Integer> clocks= this.getVv();
         File_CRDT file= new File_CRDT(clocks,hash);
         ficheiros.put(nameFile,file);
         this.album.put("ficheiros",ficheiros);
+        System.out.println(this.album.toString());
         return new State_CRDT_Message(clocks,getAlbum());
     }
 
@@ -58,6 +60,17 @@ public class AlbumCRDT {
         membros.put(nome,clocks);
         album.put("membros",membros);
         return new State_CRDT_Message(clocks,getAlbum());
+    }
+
+    public boolean containsFile(String nome) {
+        Map<String,File_CRDT> ficheiros=(Map<String,File_CRDT>) this.album.get("ficheiros");
+        return ficheiros.containsKey(nome);
+    }
+
+
+    public String getHashFile (String nome) {
+            Map<String,File_CRDT> ficheiros=(Map<String,File_CRDT>) this.album.get("ficheiros");
+            return ficheiros.get(nome).getHash();
     }
 
     public  State_CRDT_Message removeUser(String nome) {
@@ -87,7 +100,7 @@ public class AlbumCRDT {
         for (Map.Entry<String,File_CRDT> entry: ((Map<String,File_CRDT>) this.album.get("ficheiros")).entrySet()) {
             ficheiros.put(entry.getKey(),entry.getValue().getHash());
         }
-        album.put("ficheiros",new HashMap<String,String>());
+        album.put("ficheiros",ficheiros);
         HashMap<String,Map<String,Integer>> membros= (HashMap<String,Map<String,Integer>>) this.album.get("membros");
         album.put("membros",new ArrayList<String>(membros.keySet()));
 

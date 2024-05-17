@@ -5,7 +5,7 @@ public class Controller {
     private Sistema sistema;
 
     public Controller() {
-        this.sistema = new Sistema(12345);
+        this.sistema = new Sistema();
     }
 
     public boolean Precondition1() {
