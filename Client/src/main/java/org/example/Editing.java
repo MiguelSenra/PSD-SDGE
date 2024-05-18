@@ -305,7 +305,7 @@ public class Editing {
                                 FileUploadRequest request = FileUploadRequest.newBuilder()
                                         .setSeqNum(seqNum[0])
                                         .setChunk(ByteString.copyFrom(buffer))
-                                        .setSsaKey(Hashing.sha256().hashString(hash, java.nio.charset.StandardCharsets.UTF_8).toString())
+                                        .setSsaKey(hash)
                                         .build();
                                 seqNum[0]++;
                                 emitter.onNext(request);
@@ -364,8 +364,10 @@ public class Editing {
             String hash = null;
             try {
                 hash = calculateSHA256(filePath);
+                System.out.println("AAQUIIIIIIIIIIIIIIIIIIIIIIIIIII"+hash);
                 boolean op_error=addFileDataServer(hash, filePath);
                 if (!op_error) {
+                    System.out.println("AAQUIIIIIIIIIIIIIIIIIIIIIIIIIII"+hash);
                     State_CRDT_Message msg = this.albumCRDT.addFile(nomeFile, hash);
                     this.sendMessage(msg, false);
                 }
@@ -455,6 +457,7 @@ public class Editing {
                         }
                         else {
                             try {
+                                System.out.println(response);
                                 // Escrever os bytes recebidos no arquivo
                                 fileOutputStream.write(response.getChunk().toByteArray());
                             } catch (IOException e) {
@@ -464,11 +467,11 @@ public class Editing {
                         }
                     })
                     .blockingSubscribe(System.out::println);
-                System.out.println("Ficheiro descarregado com sucesso.");
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+        System.out.println("Ficheiro descarregado com sucesso.");
     }
 
     public void downloadFile(String nomeFile, String filePath) {

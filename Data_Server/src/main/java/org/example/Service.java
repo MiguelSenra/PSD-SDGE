@@ -126,6 +126,7 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
             fis = new FileInputStream(hash);
         }
         catch (Exception e) {
+            out.println(e.getMessage());
             return Flowable.empty();
         }
         ZoneLimits zone= keyInDomain(hash);
@@ -215,7 +216,7 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
                 }
                 else {
                     filesByLimits.get(zone).remove(req.getHash());
-                    Path path = Paths.get("Data/" + req.getHash());
+                    Path path = Paths.get( req.getHash());
                     Files.delete(path);
                     return RemoveFileResponse.newBuilder().setMessage("File removed").build();
                 }
