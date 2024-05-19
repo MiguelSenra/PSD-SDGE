@@ -79,6 +79,7 @@ public class Editing {
                                     socket.connect("tcp://localhost:" + msg.getUser().getPort());
                                     Thread.sleep(2000);
                                     sendMessage_User( new JoinResponse(chatClock.myClock()),msg.getUser().getuser());
+                                    sendMessage_User(this.albumCRDT.actualState(), msg.getUser().getuser());
                                 }
                                 else if (deserializedMessage instanceof JoinResponse) {
                                     JoinResponse msg = (JoinResponse) deserializedMessage;

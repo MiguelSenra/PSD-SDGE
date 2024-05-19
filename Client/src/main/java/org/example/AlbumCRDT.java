@@ -62,6 +62,10 @@ public class AlbumCRDT {
         return new State_CRDT_Message(clocks,getAlbum());
     }
 
+    public State_CRDT_Message actualState() {
+        return new State_CRDT_Message(this.getVv(),this.getAlbum());
+    }
+
     public boolean containsFile(String nome) {
         Map<String,File_CRDT> ficheiros=(Map<String,File_CRDT>) this.album.get("ficheiros");
         return ficheiros.containsKey(nome);

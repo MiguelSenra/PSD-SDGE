@@ -19,7 +19,7 @@ public class State_CRDT_Message extends Message implements Serializable  {
     }
 
     public Map<String, Object> getAlbum() {
-        return album;
+        return new HashMap<String, Object>(album);
     }
 
     public void setMessage(Map<String, Object> message) {
