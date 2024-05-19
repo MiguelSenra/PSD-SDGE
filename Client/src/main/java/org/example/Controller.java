@@ -19,6 +19,7 @@ public class Controller {
     public void autenticar(String username, String password) {
         this.sistema.autenticar(username, password);
     }
+
     public void listaAlbuns() {
         this.sistema.listaAlbuns();
     }
@@ -31,19 +32,14 @@ public class Controller {
         return this.sistema.getAlbum(nome);
     }
 
-    /*public void BeginEdition(String nomeAlbum, String username) {
-        this.sistema.BeginEdition(nomeAlbum);
-    }
-    */
     public void TerminateEdition() {
         this.sistema.TerminateEdition();
     }
 
-
-
     public void addFile(String nomeFile, String path) {
         this.sistema.addFile(nomeFile, path);
     }
+
     public void removeFile(String nomeFile) {
         this.sistema.removeFile(nomeFile);
     }
@@ -51,6 +47,7 @@ public class Controller {
     public void addUser(String nome) {
         this.sistema.addUser(nome);
     }
+
     public void removeUser(String nome) {
         this.sistema.removeUser(nome);
     }
@@ -66,7 +63,4 @@ public class Controller {
     public void infoAlbum() {
         this.sistema.infoAlbum();
     }
-
-
-
 }

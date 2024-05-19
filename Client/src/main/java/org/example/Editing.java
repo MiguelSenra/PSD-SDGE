@@ -10,7 +10,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import com.ericsson.otp.erlang.*;
-import com.google.common.hash.Hashing;
 import com.google.protobuf.ByteString;
 import inc.FileDownloadRequest;
 import inc.FileUploadRequest;
@@ -22,11 +21,8 @@ import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import org.zeromq.ZContext;
 
-import javax.sound.midi.SysexMessage;
 
 public class Editing {
-
-    //private Scanner scanner;
 
     private ArrayList<Editor> members;
 
@@ -38,10 +34,9 @@ public class Editing {
 
     AlbumCRDT albumCRDT;
 
-    //private CausalBroadcast cb= new CausalBroadcast();
-     String username;
+    String username;
 
-     String albumName;
+    String albumName;
 
     ZContext context;
 
@@ -64,8 +59,6 @@ public class Editing {
                     this.socket1 = context1.createSocket(SocketType.ROUTER);
                     this.socket1.setIdentity(username.getBytes(ZMQ.CHARSET));
                     this.socket1.bind("tcp://localhost:" + portNUmber);
-                    //CausalBroadcast causal = new CausalBroadcast();
-                    //while (!Thread.currentThread().isInterrupted()) {
                     while (true) {
                         byte[] id = socket1.recv();
                         byte[] req = socket1.recv();
@@ -79,7 +72,6 @@ public class Editing {
                                 } else if (deserializedMessage instanceof ChatMessage){
                                     ChatMessage msg = (ChatMessage) deserializedMessage;
                                     chatClock.processMessage(msg);
-                                    //System.out.println("[" + new String(id, ZMQ.CHARSET) + "]: " + msg.getText());
                                 }
                                 else if (deserializedMessage instanceof JoinMessage) {
                                     JoinMessage msg = (JoinMessage) deserializedMessage;
@@ -90,7 +82,6 @@ public class Editing {
                                 }
                                 else if (deserializedMessage instanceof JoinResponse) {
                                     JoinResponse msg = (JoinResponse) deserializedMessage;
-                                    //System.out.println(msg.getClock());
                                     chatClock.updateRelogio(msg.getClock());
                                 }
                                 else if (deserializedMessage instanceof ExitMessage) {
@@ -109,14 +100,12 @@ public class Editing {
             });
             replyThread.start();
             socket.setIdentity(username.getBytes(ZMQ.CHARSET));
-            //this.socket.connect("tcp://localhost:" + 12346);
 
             Editor self=new Editor();
             for (int i = 0; i < this.members.size(); i++) {
                 if (this.members.get(i).getuser().equals(username)) {
                     self = new Editor(members.get(i));
                 }
-                //System.out.println("tcp://localhost:" + this.members.get(i).getPort());
                 this.socket.connect("tcp://localhost:" + this.members.get(i).getPort());
            }
             Thread.sleep(1000);
@@ -135,8 +124,6 @@ public class Editing {
                 scanner.next();
                 scanner.close();
             }
-            //scanner.reset();
-            //scanner.close();
         }
 
     public void sendMessage(Message msg,boolean idincluded) {
@@ -174,6 +161,7 @@ public class Editing {
         this.context.close();
         return this.albumCRDT.Album_Send();
     }
+
     public void addUser(String nome) {
         State_CRDT_Message msg=this.albumCRDT.addUser(nome);
         this.sendMessage(msg,false);
@@ -259,7 +247,6 @@ public class Editing {
                                 long portLong = ((OtpErlangLong) fields1[1]).longValue();
                                 int port=(int) portLong;
                                 String hash = ((OtpErlangString) fields1[2]).stringValue();
-                                //System.out.println("AQUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"+element.toString());
                                 servers.add(new Zone(ip, port, hash));
                             }
                         }
@@ -364,10 +351,8 @@ public class Editing {
             String hash = null;
             try {
                 hash = calculateSHA256(filePath);
-                System.out.println("AAQUIIIIIIIIIIIIIIIIIIIIIIIIIII"+hash);
                 boolean op_error=addFileDataServer(hash, filePath);
                 if (!op_error) {
-                    System.out.println("AAQUIIIIIIIIIIIIIIIIIIIIIIIIIII"+hash);
                     State_CRDT_Message msg = this.albumCRDT.addFile(nomeFile, hash);
                     this.sendMessage(msg, false);
                 }

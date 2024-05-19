@@ -20,6 +20,7 @@ public class ChatClock {
     public int myClock() {
         return v_clock.get(this.username);
     }
+
     public ChatClock(String username) {
         this.username = username;
         this.v_clock = new HashMap<>();
@@ -62,6 +63,7 @@ public class ChatClock {
             return false;
         }
     }
+
     public ChatMessage verificaMensagensAtrasadas() {
         for (ChatMessage msg : pending) {
             if (canDeliver(msg)) {
@@ -71,6 +73,7 @@ public class ChatClock {
         }
         return null;
     }
+    
     public void deliverMessage(ChatMessage msg) {
         if (msg.getSrc().equals(username)) {
             System.out.println("[" + msg.getSrc() + "]: " + msg.getText());

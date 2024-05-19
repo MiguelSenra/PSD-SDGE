@@ -138,7 +138,6 @@ public class State_CRDT_Message extends Message implements Serializable  {
                         Map<String, Integer> newClock = mergeClocks(clock1,this.vv);
                         newFiles.put(fileName, new File_CRDT(newClock,entry.getValue().getHash()));
                     }
-
                 }
             }
 
@@ -155,8 +154,6 @@ public class State_CRDT_Message extends Message implements Serializable  {
                     }
                 }
             }
-
-
         }
         return newFiles;
     }
@@ -218,8 +215,6 @@ public class State_CRDT_Message extends Message implements Serializable  {
                     }
                 }
             }
-
-
         }
         mergedState.put(
                 "membros",
@@ -229,8 +224,5 @@ public class State_CRDT_Message extends Message implements Serializable  {
         Map<String, Integer> newClock = mergeClocks(this.vv,state1.getVv());
 
         return new State_CRDT_Message(newClock,mergedState);
-
     }
-
 }
-

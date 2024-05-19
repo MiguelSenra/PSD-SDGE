@@ -69,9 +69,6 @@ public class Main {
             controller.infoAlbum();
         });
 
-
-
-
         //Fazer o registo
         menuInicial.setHandler(1, () -> {
                 System.out.println("Nome de Utilizador:");
@@ -109,51 +106,11 @@ public class Main {
             }
         });
 
-
         menuInicial.setPreCondition(1, () -> !controller.Precondition1());
         menuInicial.setPreCondition(2, () -> !controller.Precondition1());
         menuInicial.setPreCondition(3, controller::Precondition1);
         menuInicial.setPreCondition(4, controller::Precondition1);
         menuInicial.setPreCondition(5, controller::Precondition1);
-
-
-
-
-
-
-        /*
-        menuInicial.setHandler(2, () -> {
-
-            NewMenu menuAddDivisoes = new NewMenu(new String[]{
-                    "Adicionar uma nova divisão"
-            });
-
-        System.out.println("Nome de Utilizador:");
-        String nome = scanner.nextLine();
-        System.out.println("Password");
-        String password = scanner.nextLine();
-        controller.autenticar(nome,password);
-
-        //controller.InsereCasa(nome, nif, nomeEmpresa);
-
-            try {
-                menuAddDivisoes.setHandler(1, () -> {
-                    try {
-                        System.out.println("Insira o nome da Divisão da casa que pretende adicionar:");
-                        String nomeDivisao = scanner.nextLine();
-                        controller.addRoom(nif, nomeDivisao);
-                    } catch (DivisaoJaExisteException a) {
-                        System.out.println(a.getMessage());
-                    }
-                });
-
-                menuAddDivisoes.run();
-            } catch (NumberFormatException e) {
-                System.out.println("Formato do NIF errado! Não foi possível adicionar a Casa Inteligente!");
-            }
-
-    });
-         */
 
         menuInicial.run();
     }

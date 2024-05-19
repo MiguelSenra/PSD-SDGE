@@ -1,7 +1,5 @@
 package org.example;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -48,7 +46,7 @@ public class Sistema {
                 int bytesRead;
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 while ((bytesRead = ss.read(bb)) != -1) {
-                    System.out.println("Lidos " + bytesRead + " bytes do socket.");
+                    //System.out.println("Lidos " + bytesRead + " bytes do socket.");
                     bb.flip();
                     byte[] receivedBytes = new byte[bb.remaining()];
                     bb.get(receivedBytes);
@@ -88,7 +86,6 @@ public class Sistema {
         }
     }
 
-
     public void autenticar (String username, String password) {
         String response=this.autentication_handler("login",username,password);
         if (response.equals("ok")) {
@@ -101,6 +98,7 @@ public class Sistema {
         }
 
     }
+
     public void criaAlbum(String nome) {
         String response=this.autentication_handler("create_Album",nome,this.username);
         if (response.equals("album_created")) {
@@ -149,7 +147,7 @@ public class Sistema {
                     int bytesRead;
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     while ((bytesRead = ss1.read(bb)) != -1) {
-                        System.out.println("Lidos " + bytesRead + " bytes do socket.");
+                        //System.out.println("Lidos " + bytesRead + " bytes do socket.");
                         bb.flip();
                         byte[] receivedBytes = new byte[bb.remaining()];
                         bb.get(receivedBytes);
@@ -214,7 +212,6 @@ public class Sistema {
         return "erro";
     }
 
-
     private ArrayList<String> list_handler(String atom) {
         try {
             this.ss = SocketChannel.open(new InetSocketAddress((int)SC_portNumber));
@@ -233,7 +230,7 @@ public class Sistema {
                 int bytesRead;
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 while ((bytesRead = ss.read(bb)) != -1) {
-                    System.out.println("Lidos " + bytesRead + " bytes do socket.");
+                    //System.out.println("Lidos " + bytesRead + " bytes do socket.");
                     bb.flip();
                     byte[] receivedBytes = new byte[bb.remaining()];
                     bb.get(receivedBytes);
@@ -276,7 +273,6 @@ public class Sistema {
         System.out.println(list_handler("list_Album"));
     }
 
-
     public ArrayList<Editor> BeginEdition(String albumName) {
         ArrayList<Editor> editors = new ArrayList<>();
         try {
@@ -299,7 +295,7 @@ public class Sistema {
                 int bytesRead;
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 while ((bytesRead = ss1.read(bb)) != -1) {
-                    System.out.println("Lidos " + bytesRead + " bytes do socket.");
+                    //System.out.println("Lidos " + bytesRead + " bytes do socket.");
                     bb.flip();
                     byte[] receivedBytes = new byte[bb.remaining()];
                     bb.get(receivedBytes);
@@ -311,7 +307,7 @@ public class Sistema {
 
                 OtpErlangTuple response = bytesToTuple(receivedBytes);
                 OtpErlangObject[] fields = response.elements();
-                System.out.println(response);
+                //System.out.println(response);
                 OtpErlangObject firstField = fields[0];
                 if (firstField instanceof OtpErlangAtom) {
                     // Converter o átomo em uma string
@@ -382,7 +378,7 @@ public class Sistema {
                 int bytesRead;
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 while ((bytesRead = ss1.read(bb)) != -1) {
-                    System.out.println("Lidos " + bytesRead + " bytes do socket.");
+                    //System.out.println("Lidos " + bytesRead + " bytes do socket.");
                     bb.flip();
                     byte[] receivedBytes = new byte[bb.remaining()];
                     bb.get(receivedBytes);
@@ -427,7 +423,7 @@ public class Sistema {
 
     public static OtpErlangTuple bytesToTuple(byte[] bytes) throws IOException, OtpErlangDecodeException {
         // Descodificar os bytes em um objeto OtpErlangTuple
-        System.out.println(new String(bytes, StandardCharsets.UTF_8));
+        //System.out.println(new String(bytes, StandardCharsets.UTF_8));
         OtpErlangObject object = new OtpInputStream(bytes).read_any();
         //System.out.println(object);
         if (!(object instanceof OtpErlangTuple)) {

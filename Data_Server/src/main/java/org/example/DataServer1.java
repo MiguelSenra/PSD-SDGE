@@ -15,7 +15,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import static com.google.common.base.Strings.repeat;
@@ -37,13 +36,10 @@ public class DataServer1 {
         DataServer1 server = new DataServer1();
         ArrayList<Zone> servers=server.OpenSession();
         ArrayList<Zone> vizinhos = server.getVizinhos(servers);
-        //System.out.println(vizinhos.toString());
         server.limits=server.getLimits(servers);
-        //System.out.println(server.limits.toString());
         for (Zone z : vizinhos) {
             server.GetData(z);
         }
-        //System.out.println("ativo");
         server.GRPCServer();
     }
 
@@ -52,12 +48,10 @@ public class DataServer1 {
         Boolean add =false;
         for (Zone z : servers) {
             if (add && (!z.getIp().equals(this.ip) ||  z.getPort()!=this.portNumber)){
-                //System.out.println(z);
                 vizinhos.add(z);
                 add=false;
             }
             else if (z.getIp().equals(this.ip) && z.getPort()==this.portNumber) {
-                //System.out.println(z);
                 add=true;
             }
         }
@@ -106,6 +100,7 @@ public class DataServer1 {
 
         return randomString.toString();
     }
+
     public ArrayList<Zone> OpenSession() throws Exception {
         ArrayList<OtpErlangTuple> keys = new ArrayList<>();
         for (int i=0;i<Nr_keys;i++) {
@@ -137,7 +132,6 @@ public class DataServer1 {
             // Loop para ler os dados do socket
             int bytesRead;
             while ((bytesRead = ss.read(bb)) != -1) {
-                //System.out.println("Lidos " + bytesRead + " bytes do socket.");
                 bb.flip();
                 byte[] receivedBytes = new byte[bb.remaining()];
                 bb.get(receivedBytes);
@@ -205,6 +199,7 @@ public class DataServer1 {
                 })
                 .blockingSubscribe(System.out::println);
     }
+    
     public void GRPCServer() throws Exception {
         io.grpc.Server server = io.grpc.ServerBuilder.forPort(this.portNumber)
                 .addService(new Service(limits))

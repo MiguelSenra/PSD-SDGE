@@ -34,7 +34,7 @@ process_tcp_messages(Sock) ->
     io:format("a processar~n", []),
     receive
         {tcp, _, Data} ->
-            io:format("aqui~n~p", [Data]),
+            %io:format("aqui~n~p", [Data]),
             Data1 = binary_to_term(Data),
             case Data1 of 
                 {register, Credentials} ->

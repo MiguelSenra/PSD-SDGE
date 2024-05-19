@@ -17,7 +17,6 @@ public class Zone implements Comparable<Zone>{
         return this.hash.compareTo(o.getHash());
     }
 
-
     // Getters and setters if needed
     public String getIp() {
         return ip;

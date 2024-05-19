@@ -1,7 +1,6 @@
 package org.example;
 
 import com.google.protobuf.ByteString;
-import inc.*;
 import inc.FileDownloadResponse;
 import inc.FileUploadRequest;
 import inc.FileUploadResponse;
@@ -14,12 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 import static java.lang.System.out;
-
-
-
 
 public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
 
@@ -52,7 +47,6 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
     private ArrayList<String> ListFilesToTransferNewServer(String hash) {
         ArrayList<String> filesToTransfer = new ArrayList<>();
         // Procura pelos limites que contêm o hash fornecido
-        //out.println();
         ZoneLimits zoneLimits = keyInDomain(hash);
 
         // Se encontrou os limites correspondentes
@@ -90,9 +84,10 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
                         }
                     }
 
-                    out.println(requestMessage.toString());
+                    //out.println(requestMessage.toString());
                     if ((!error[0] && requestMessage.getSeqNum()!=1) || !filesByLimits.get(zone).contains(ssh_key)) {
-                        filesByLimits.get(zone).add(ssh_key);
+                        if (!filesByLimits.get(zone).contains(ssh_key))
+                            filesByLimits.get(zone).add(ssh_key);
                         int val=guardar_file(ssh_key, campo2);
                         return Flowable.just(FileUploadResponse.newBuilder().setSize(val).setMessage("Packet uploaded").build());
                     }

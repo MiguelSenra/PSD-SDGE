@@ -58,7 +58,6 @@ handle({list_album,User}, {Albuns, User_index}) ->
 handle({get_album, Name, User}, {Albuns, User_index}) ->
     %Res_error= "Não possui autorização para acessar o album!",
     Res_error= no_autorization,
-    io:format("aqui:~n", []),
     case maps:find(User, User_index) of
         {ok, Value} -> case lists:member(Name, Value) of 
             true -> case maps:find(Name, Albuns) of
@@ -122,8 +121,6 @@ remove_user_from_editors(User, [{_, _, UserName} | Tail]) when UserName == User 
     remove_user_from_editors(User, Tail);
 remove_user_from_editors(User, [Head | Tail]) ->
     [Head | remove_user_from_editors(User, Tail)].
-
-
 
 loop({Albuns,User_index}) -> 
     receive 

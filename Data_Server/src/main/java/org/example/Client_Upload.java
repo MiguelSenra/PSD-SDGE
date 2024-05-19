@@ -1,6 +1,5 @@
 package org.example;
 
-import com.ericsson.otp.erlang.*;
 import com.google.common.hash.Hashing;
 import com.google.protobuf.ByteString;
 import inc.FileUploadRequest;
@@ -9,7 +8,6 @@ import io.grpc.ManagedChannelBuilder;
 import io.reactivex.rxjava3.core.Flowable;
 
 import java.io.*;
-import java.security.MessageDigest;
 
 public class Client_Upload {
     private static final int BATCH_SIZE = 1024;
@@ -21,7 +19,7 @@ public class Client_Upload {
                 .build();
         var stub = Rx3FileServiceGrpc.newRxStub(channel);
 
-        try (FileInputStream fileInputStream = new FileInputStream("senra_3.jpg")) {
+        try (FileInputStream fileInputStream = new FileInputStream("UM.jpg")) {
             stub.upload(Flowable.generate(emitter -> {
                         int numBytesRead = fileInputStream.read(buffer);
                         if (numBytesRead == -1) {
@@ -44,8 +42,5 @@ public class Client_Upload {
         } catch (IOException e) {
             System.err.println("Erro ao abrir arquivo: " + e.getMessage());
         }
-
     }
-
-
 }
