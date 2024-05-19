@@ -42,66 +42,66 @@ process_tcp_messages(Sock) ->
                     Res=login_manager:create_account(Credentials),
                     io:format("Estado do registo:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
-                    gen_tcp:close(Sock),
+                    gen_tcp:close(Sock);
                     %io:format("resposta~n~p", [Res]),
-                    process_tcp_messages(Sock);
+                    %process_tcp_messages(Sock);
                 {login, Credentials} ->
                     io:format("user login~n", []),
                     Res=login_manager:login(Credentials),
                     io:format("Estado do login:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
-                    gen_tcp:close(Sock),
-                    process_tcp_messages(Sock);
+                    gen_tcp:close(Sock);
+                    %process_tcp_messages(Sock);
                 {create_Album,Values} ->
                     Res=albuns:create_Album(Values),
                     io:format("Estado do album:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
-                    gen_tcp:close(Sock),
-                    process_tcp_messages(Sock);
+                    gen_tcp:close(Sock);
+                    %process_tcp_messages(Sock);
                 {list_Album,Values} ->
                     Res=albuns:list_Album(Values),
                     io:format("Estado do album:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
-                    gen_tcp:close(Sock),
-                    process_tcp_messages(Sock);
+                    gen_tcp:close(Sock);
+                    %process_tcp_messages(Sock);
                 {get_Album,Values} ->
                     io:format("get do album:~n", []),
                     Res=albuns:get_Album(Values),
                     io:format("Estado do album:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
-                    gen_tcp:close(Sock),
-                    process_tcp_messages(Sock);
+                    gen_tcp:close(Sock);
+                    %process_tcp_messages(Sock);
                 {add_editor,Values} ->
                     io:format("add editor do album:~n", []),
                     Res=albuns:add_editor(Values),
                     io:format("editores do album1:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
-                    gen_tcp:close(Sock),
-                    process_tcp_messages(Sock);
+                    gen_tcp:close(Sock);
+                    %process_tcp_messages(Sock);
                 {terminate_edit_Album,Values} ->
                     io:format("terminar edição do album:~n~p~n", [Values]),
                     Res=albuns:terminate_edit_Album(Values),
                     io:format("editores do album1:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
-                    gen_tcp:close(Sock),
-                    process_tcp_messages(Sock);
+                    gen_tcp:close(Sock);
+                    %process_tcp_messages(Sock);
                 {new_data_server,Values} ->
                     io:format("Novo servidor de dados:~n~p", [Values]),
                     Res=server_data:new_server(Values),
                     io:format("Estado do album:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
-                    gen_tcp:close(Sock),
-                    process_tcp_messages(Sock);
+                    gen_tcp:close(Sock);
+                    %process_tcp_messages(Sock);
                 {get_servers} ->
                     io:format("Dados servidores de dados atualizados:~n", []),
                     Res=server_data:get_servers(),
                     io:format("Estado do album:~n~p", [Res]),
                     gen_tcp:send(Sock, term_to_binary(Res)),
-                    gen_tcp:close(Sock),
-                    process_tcp_messages(Sock);
+                    gen_tcp:close(Sock);
+                    %process_tcp_messages(Sock);
                 Dados ->
-                    io:format("nada ~n~p", [Dados]),
-                    process_tcp_messages(Sock)
+                    io:format("nada ~n~p", [Dados])
+                    %process_tcp_messages(Sock)
             end;
             
         {tcp_closed, _} -> ok;
