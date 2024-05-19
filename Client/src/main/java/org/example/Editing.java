@@ -402,8 +402,8 @@ public class Editing {
     }
 
     public void removeFile(String nomeFile) {
-        if (this.albumCRDT.containsFile(nomeFile))  {
-            String hash = this.albumCRDT.getHashFile(nomeFile);
+        String hash = this.albumCRDT.getHashFile(nomeFile);
+        if (hash != null)  {
             try {
                 removeFileDataServer(hash);
                 State_CRDT_Message msg= this.albumCRDT.removeFile(nomeFile);
@@ -461,8 +461,8 @@ public class Editing {
     }
 
     public void downloadFile(String nomeFile, String filePath) {
-        if (this.albumCRDT.containsFile(nomeFile))  {
-            String hash = this.albumCRDT.getHashFile(nomeFile);
+        String hash = this.albumCRDT.getHashFile(nomeFile);
+        if (hash != null) {
             try {
                 downloadFileDataServer(hash,filePath);
             } catch (Exception e) {

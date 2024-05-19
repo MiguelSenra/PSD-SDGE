@@ -26,7 +26,7 @@ public class DataServer1 {
     private SocketChannel ss;
 
     private static final String ip = "localhost";
-    private static final int portNumber = 12350;
+    private static final int portNumber = 12353;
 
     private final int Nr_keys=3;
 

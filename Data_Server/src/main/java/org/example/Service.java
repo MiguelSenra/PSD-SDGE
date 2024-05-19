@@ -13,6 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.lang.System.out;
 
@@ -29,11 +31,12 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
     }
 
     private ZoneLimits keyInDomain(String key) {
+        ZoneLimits zoneLimits = null;
         for (ZoneLimits z : filesByLimits.keySet()) {
             if (z.keyInInterval(key))
-                return z;
+                zoneLimits= z;
         }
-        return null;
+        return zoneLimits;
     }
 
     private void newLimits(String key) {
@@ -70,47 +73,53 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
 
     public Flowable<FileUploadResponse> upload(Flowable<FileUploadRequest> request) {
         final boolean[] error = {false};
+        final boolean[] checkFile= {false};
+        final boolean[] fileExists= {false};
         return request.flatMap(requestMessage -> {
-                    byte[] campo2 = requestMessage.getChunk().toByteArray();
-                    String ssh_key = requestMessage.getSsaKey();
-                    ZoneLimits zone= keyInDomain(ssh_key);
+            byte[] campo2 = requestMessage.getChunk().toByteArray();
+            String ssh_key = requestMessage.getSsaKey();
+            ZoneLimits zone= keyInDomain(ssh_key);
 
-                    if (zone==null) {
-                        if (error[0])
-                            return Flowable.empty();
-                        else {
-                            error[0] = true;
-                            return Flowable.just(FileUploadResponse.newBuilder().setSize(-1).setMessage("No autorization").build());
-                        }
-                    }
-
-                    //out.println(requestMessage.toString());
-                    if ((!error[0] && requestMessage.getSeqNum()!=1) || !filesByLimits.get(zone).contains(ssh_key)) {
-                        if (!filesByLimits.get(zone).contains(ssh_key))
-                            filesByLimits.get(zone).add(ssh_key);
-                        int val=guardar_file(ssh_key, campo2);
-                        return Flowable.just(FileUploadResponse.newBuilder().setSize(val).setMessage("Packet uploaded").build());
+            if (zone==null) {
+                if (error[0])
+                    return Flowable.empty();
+                else {
+                    error[0] = true;
+                    return Flowable.just(FileUploadResponse.newBuilder().setSize(-1).setMessage("No autorization").build());
+                }
+            }
+            else {
+                //boolean OK = true;
+                if (!checkFile[0]) {
+                    if (!filesByLimits.get(zone).contains(ssh_key)) {
+                        filesByLimits.get(zone).add(ssh_key);
+                        checkFile[0] = true;
                     }
                     else {
-                        if (error[0])
-                            return Flowable.empty();
-                        else {
-                            error[0] = true;
-                            return Flowable.just(FileUploadResponse.newBuilder().setSize(-1).setMessage("File exists").build());
-                        }
+                        fileExists[0] = true;
+                        checkFile[0] = true;
+                        return Flowable.just(FileUploadResponse.newBuilder().setSize(-1).setMessage("File exists").build());
                     }
-                });
+                }
+
+                if (fileExists[0])
+                    return Flowable.empty();
+                else {
+                    int val=guardar_file(+ssh_key, campo2);
+                    return Flowable.just(FileUploadResponse.newBuilder().setSize(val).setMessage("Packet uploaded").build());
+                }
+            }
+        });
     }
 
     public Flowable<FileDownloadResponse> transferDataNewServer(Flowable<inc.TransferDataNewServerRequest> request) {
-        //out.println("TransferDataNewServerRequest");
-        return request.flatMap(res-> {
-            ArrayList<String> ar= ListFilesToTransferNewServer(res.getSsaKey());
+        return request.flatMap(res -> {
+            ArrayList<String> ar = ListFilesToTransferNewServer(res.getSsaKey());
             newLimits(res.getSsaKey());
-            //out.println(ar.toString());
             return auxNewServer(ar);
-            });
+        });
     }
+
 
 
     public Flowable<FileDownloadResponse> aux_download(String hash) {
