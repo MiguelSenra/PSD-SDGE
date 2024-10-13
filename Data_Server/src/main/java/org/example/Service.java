@@ -105,7 +105,7 @@ public class Service extends Rx3FileServiceGrpc.FileServiceImplBase {
                 if (fileExists[0])
                     return Flowable.empty();
                 else {
-                    int val=guardar_file(+ssh_key, campo2);
+                    int val=guardar_file(ssh_key, campo2);
                     return Flowable.just(FileUploadResponse.newBuilder().setSize(val).setMessage("Packet uploaded").build());
                 }
             }

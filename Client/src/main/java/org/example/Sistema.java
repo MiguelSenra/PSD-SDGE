@@ -16,7 +16,7 @@ public class Sistema {
 
     private long SC_portNumber=12345;
 
-    private long clientPort=12348;
+    private long clientPort=123471;
 
     private Boolean login=false;
 
